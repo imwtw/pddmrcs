@@ -4,7 +4,7 @@ import math
 import numpy
 import rospy
 import actionlib
-from tf import TransformListener
+import tf
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Inertia, Twist, Accel, Wrench, Pose, Point
@@ -38,12 +38,11 @@ ROBOT_MASS = 50
 MAX_DIST = 5
 
 hui_znaet = 1
-dt = .01
 eps = .001
 
 class sfm_controller():
    
-
+    # init
     def __init__(self) -> None:
 
         # goal tmp
@@ -94,7 +93,7 @@ class sfm_controller():
         self.current_laser_ranges = numpy.zeros(360)
 
         # ros things
-        self.tf = TransformListener()
+        self.tf_ = tf.TransformListener()
         self.action_client = actionlib.SimpleActionClient('move_base', MoveBaseAction) #???????
         self.action_server = actionlib.SimpleActionServer(
             self.action_name,
@@ -132,72 +131,9 @@ class sfm_controller():
         # )
 
         while not self.goal_reached():
-            complete_force = numpy.array([self.calculate_force().force.x, 
-                                          self.calculate_force().force.y, 
-                                          self.calculate_force().force.z], 
-                                          numpy.dtype("float64"))
-            print("complete force:", complete_force)
-
-        #     self.robot_current_vel = self.robot_current_vel + (complete_force / 25)
-        #     print("robot current vel:", self.robot_current_vel)
-
-        #     speed = np.linalg.norm(self.robot_current_vel)
-
-        #     if speed > self.robot_max_vel:
-        #         self.robot_current_vel = (
-        #             self.robot_current_vel
-        #             / np.linalg.norm(self.robot_current_vel)
-        #             * self.robot_max_vel
-        #         )
-
-        #     t = self.tf.getLatestCommonTime("/base_footprint", "/odom")
-        #     position, quaternion = self.tf.lookupTransform(
-        #         "/base_footprint", "/odom", t
-        #     )
-        #     robot_offset_angle = tf.transformations.euler_from_quaternion(quaternion)[2]
-
-        #     print("offset_angle:", math.degrees(robot_offset_angle))
-
-        #     angulo_velocidad = angle(
-        #         self.robot_current_vel, np.array([1, 0, 0], np.dtype("float64"))
-        #     )
-
-        #     print("angulo_velocidad:", math.degrees(angulo_velocidad))
-
-        #     if self.robot_position[1] > self.current_waypoint[1]:
-        #         angulo_velocidad = angulo_velocidad - robot_offset_angle
-        #     else:
-        #         angulo_velocidad = angulo_velocidad + robot_offset_angle
-
-        #     print("angulo final (degree):", math.degrees(angulo_velocidad))
-
-        #     vx = np.linalg.norm(self.robot_current_vel) * math.cos(angulo_velocidad)
-
-        #     # w = np.linalg.norm(self.robot_current_vel) * math.sin(angulo_velocidad)
-
-        #     w = self.pid_rotation(angulo_velocidad)
-
-        #     cmd_vel_msg = Twist()
-        #     cmd_vel_msg.linear.x = vx
-        #     cmd_vel_msg.angular.z = -w
-
-        #     self.velocity_pub.publish(cmd_vel_msg)
-
-        #     print("v lineal:", vx)
-        #     print("w:", w)
-        #     print("#####")
-        #     self._feedback.feedback = "robot moving"
-        #     rospy.loginfo("robot_ moving")
-        #     self._as.publish_feedback(self._feedback)
-        #     r_sleep.sleep()
-        # cmd_vel_msg = Twist()
-        # cmd_vel_msg.linear.x = 0
-        # cmd_vel_msg.angular.z = 0
-
-        # self.velocity_pub.publish(cmd_vel_msg)
-        # self._result = "waypoint reached"
-        # rospy.loginfo("waypoint reached")
-        # self._as.set_succeeded(self._result)
+            cmd_vel_msg = self.calculate_velocity()
+            self.publisher.publish(cmd_vel_msg)
+        self.publisher.publish(Twist())
 
     # odometry callback
     def callback_sub_odom(self, called_data):
@@ -289,57 +225,9 @@ class sfm_controller():
             coef_b = 1
             social_force += coef_a * (robot_to_agent_vel_norm * robot_to_agent_dir / collision_time) * math.exp( - collision_dist_norm / coef_b) * (collision_dist / collision_dist_norm)
         print("social force:", social_force)
-        return social_force
-
-        # force = np.array([0, 0, 0], np.dtype("float64"))
-        # for i in self.agents_states_register:
-        #     diff_position = (
-        #         np.array(
-        #             [
-        #                 i.pose.position.x,
-        #                 i.pose.position.y,
-        #                 i.pose.position.z,
-        #             ],
-        #             np.dtype("float64"),
-        #         )
-        #         - self.robot_position
-        #     )
-        #     diff_direction = diff_position / np.linalg.norm(diff_position)
-        #     agent_velocity = i.twist.linear
-        #     diff_vel = self.robot_current_vel - np.array(
-        #         [
-        #             agent_velocity.x,
-        #             agent_velocity.y,
-        #             agent_velocity.z,
-        #         ],
-        #         np.dtype("float64"),
-        #     )
-        #     interaction_vector = self.lambda_importance * diff_vel + diff_direction
-        #     interaction_length = np.linalg.norm(interaction_vector)
-        #     interaction_direction = interaction_vector / interaction_length
-        #     theta = angle(interaction_direction, diff_direction)
-        #     B = self.gamma * interaction_length
-        #     force_velocity_amount = -math.exp(
-        #         -np.linalg.norm(diff_position) / B
-        #         - (self.n_prime * B * theta) * (self.n_prime * B * theta)
-        #     )
-        #     force_angle_amount = -number_sign(theta) * math.exp(
-        #         -np.linalg.norm(diff_position) / B
-        #         - (self.n * B * theta) * (self.n * B * theta)
-        #     )
-        #     force_velocity = force_velocity_amount * interaction_direction
-        #     force_angle = force_angle_amount * np.array(
-        #         [
-        #             -interaction_direction[1],
-        #             interaction_direction[0],
-        #             0,
-        #         ],
-        #         np.dtype("float64"),
-        #     )
-        #     force += force_velocity + force_angle
-        #     print("Social force:", force)
+        return social_force  
         
-    # calculate potential force from obstacles - repulse_from_closest
+    # calculate potential force from obstacles - repulse_from_closest_inverse_exponential
     def calculate_obstacle_force(self):
 
         obstacle_force = numpy.array([0,0,0], numpy.dtype("float64"))
@@ -361,17 +249,14 @@ class sfm_controller():
                 tmp_val = diff_robot_laser[i]
                 min_index = i
         if diff_robot_laser[min_index] < 1:
-            print("minimo:", diff_robot_laser[min_index])
+            print("wall distance: ", diff_robot_laser[min_index])
             laser_pos = -1 * numpy.array(
-                [
-                    self.current_laser_ranges[min_index]
+                [   self.current_laser_ranges[min_index]
                     * math.cos(math.radians(min_index - 180)),
                     self.current_laser_ranges[min_index]
                     * math.sin(math.radians(min_index - 180)),
-                    0,
-                ],
-                numpy.dtype("float64"),
-            )
+                    0
+                ], numpy.dtype("float64"))
             # print("laser_pos:", laser_pos)
             laser_vec_norm = numpy.linalg.norm(laser_pos)
             if laser_vec_norm != 0:
@@ -381,65 +266,65 @@ class sfm_controller():
             distance = diff_robot_laser[min_index] - self.safe_distance
             force_amount = math.exp(-distance / self.obstacle_force_const)
             obstacle_force = force_amount * norm_laser_direction
-            print("Obstacle force:", obstacle_force)
+            print("obstacle force: ", obstacle_force)
         return obstacle_force
 
-    # calculate total potential force
-    def calculate_force(self):
-
+    # calculate total potential force - plane_no_torque
+    def calculate_force(self) -> Wrench:
         complete_force = (self.force_factor_desired * self.calculate_goal_force()
                         + self.force_factor_obstacle * self.calculate_obstacle_force()
                         + self.force_factor_social * self.calculate_social_force())
-
         self.current_force_wrench.force.x = complete_force[0]
         self.current_force_wrench.force.y = complete_force[1]
         self.current_force_wrench.force.z = complete_force[2]
-
-        return complete_force
-
-
-        # robot_vel = numpy.array([self.current_velocity_twist.linear.x, self.current_velocity_twist.linear.y, 0], numpy.dtype("float64"))
-        # robot_vel_norm = numpy.linalg.norm(robot_vel, ord=2)
-        # if robot_vel_norm < eps: robot_vel_norm = eps
-        # force_tan = numpy.dot(force, robot_vel / robot_vel_norm) * robot_vel / robot_vel_norm
-        # force_tan_norm = numpy.linalg.norm(force_tan, ord=2)
-        # force_nor = force - force_tan
-        # force_nor_norm = numpy.linalg.norm(force_nor, ord=2)
-        # self.current_force_wrench.force.x += force_tan_norm
-        # self.current_force_wrench.torque.z += force_nor_norm * 1
-
-        print(f'force, torque: {self.current_force_wrench.force.x, self.current_force_wrench.torque.z}')
+        print("complete force:", complete_force)
         return self.current_force_wrench
 
+    # calculate total acceleration from potential forces - plane_no_angular
     def calculate_acceleration(self) -> Accel:
         self.calculate_force()
         self.current_acceleration_accel.linear.x = self.current_force_wrench.force.x / self.inertia.m
+        self.current_acceleration_accel.linear.y = self.current_force_wrench.force.y / self.inertia.m
         self.current_acceleration_accel.angular.z = self.current_force_wrench.torque.z / self.inertia.izz
-        # print(f'acc:\n{self.current_acceleration_accel}')
         return self.current_acceleration_accel 
 
-    def calculate_velocity(self) -> Twist:
+    # calculate target velocity in order to satisfy acceleration - curvature_only
+    def calculate_velocity(self, *, dt=.001) -> Twist:
+
+        # calculate acceleration first
         self.calculate_acceleration()
-        dv = self.current_acceleration_accel.linear.x * dt
-        dw = self.current_acceleration_accel.angular.z * dt
-        self.desired_velocity_twist.linear.x = self.current_velocity_twist.linear.x + dv
-        self.desired_velocity_twist.angular.z = self.current_velocity_twist.angular.z + dw
-        # это тут неправильно сделано надо нормально но потом
-        # if self.desired_velocity_twist.linear.x > self.max_linear_vel: self.desired_velocity_twist.linear.x = self.max_linear_vel
-        # if self.desired_velocity_twist.angular.z > self.max_angular_vel: self.desired_velocity_twist.angular.z = self.max_angular_vel
+
+        # calculate new linear velocity
+        dvx = self.current_acceleration_accel.linear.x * dt
+        dvy = self.current_acceleration_accel.linear.x * dt
+        desired_velocity = numpy.array([self.current_velocity_twist.linear.x + dvx, 
+                                        self.current_velocity_twist.linear.y + dvy, 
+                                        0],numpy.dtype("float64"))
+        desired_velocity_norm = numpy.linalg.norm(desired_velocity, ord=2)
+        if desired_velocity_norm > self.max_linear_vel:
+            desired_velocity = self.max_linear_vel * desired_velocity / desired_velocity_norm
+        robot_orientation = self.current_pose_pose.orientation
+        robot_angle = tf.transformations.euler_from_quaternion(robot_orientation)[2]
+        angle_vel_to_base_x = calculate_v3_angle(desired_velocity, numpy.array([1, 0, 0], numpy.dtype("float64")))
+        angle_vel_to_base_x += (-1)**(self.current_pose_pose.position.y > self.current_goal_pose.position.y) * robot_angle
+        v = numpy.linalg.norm(self.desired_velocity, ord=2) * math.cos(angle_vel_to_base_x)
+
+        # calculate new angular velocity either through acceleration or through curvature or ...
+        w = self.pid_rotation( - angle_vel_to_base_x)
+        # curvature = ??????
+        # self.desired_velocity_twist.angular.z = curvature * self.desired_velocity_twist.linear.x
+        # dw = self.current_acceleration_accel.angular.z * dt
+        # w = self.current_velocity_twist.angular.z + dw
+
+        # form output message
+        self.desired_velocity_twist.linear.x = v
+        self.desired_velocity_twist.angular.z = w
         print(f'v: {self.desired_velocity_twist.linear.x}\nw: {self.desired_velocity_twist.angular.z}')
         return self.desired_velocity_twist
 
-    def nasrat_v_chat(self):
-        msg_to_publish = self.calculate_velocity()
-        self.publisher.publish(msg_to_publish)
-   
-    def spam(self):
-        while not rospy.is_shutdown():
-            self.nasrat_v_chat()
 
-
-
+def calculate_v3_angle(v1, v2): 
+    return math.acos(numpy.dot(v1, v2) / (numpy.linalg.norm(v1) * numpy.linalg.norm(v2)))
 
 
 def main():

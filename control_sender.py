@@ -366,6 +366,18 @@ def quaternion_to_euler(q: Quaternion):
 def main():
     rospy.init_node(NODE_NAME, anonymous=False)
     server = sfm_controller()
+
+    print('create client?')
+    server.action_client.wait_for_server()
+    goal_tmp = MoveBaseGoal()
+    goal_tmp.goal.x = 10
+    goal_tmp.goal.y = 10
+    goal_tmp.goal.z = 0
+    server.action_client.send_goal(goal_tmp)
+    print('wait for result?')
+    server.action_client.wait_for_result()
+    print('result>?')
+
     rospy.spin()
     #
 

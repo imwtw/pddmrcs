@@ -99,7 +99,7 @@ class sfm_controller():
         print('init ros node')
         rospy.logdebug('start') #notworking
         # self.tf_ = tf.TransformListener()
-        self.action_client = actionlib.SimpleActionClient('move_base', MoveBaseAction) #???????
+        # self.action_client = actionlib.SimpleActionClient('move_base', MoveBaseAction) #???????
         self.action_server = actionlib.SimpleActionServer(
             self.action_name,
             SFMDriveAction,
@@ -107,13 +107,10 @@ class sfm_controller():
             auto_start=False)
         self.action_server.start()
         self.publisher = rospy.Publisher(self.command_topic, Twist, queue_size=10)
-        self.subscriber_odom = rospy.Subscriber(self.odometry_topic, Odometry, self.callback_sub_odom)
-        self.subscriber_agents = rospy.Subscriber(self.agents_topic, AgentStates, self.callback_sub_agents)
-        self.subscriber_scan = rospy.Subscriber(self.scan_topic, LaserScan, self.callback_sub_scan)
+        # self.subscriber_odom = rospy.Subscriber(self.odometry_topic, Odometry, self.callback_sub_odom)
+        # self.subscriber_agents = rospy.Subscriber(self.agents_topic, AgentStates, self.callback_sub_agents)
+        # self.subscriber_scan = rospy.Subscriber(self.scan_topic, LaserScan, self.callback_sub_scan)
 
-        
-        
-              
         # init
         self.load_change()
 

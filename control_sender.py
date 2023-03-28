@@ -4,10 +4,10 @@ import math
 import numpy
 import rospy
 import actionlib
-import tf
+# import tf
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
-from geometry_msgs.msg import Inertia, Twist, Accel, Wrench, Pose, Point
+from geometry_msgs.msg import Inertia, Twist, Accel, Wrench, Pose, Point, Quaternion
 from pedsim_msgs.msg import AgentStates, AgentState
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalID
@@ -45,9 +45,7 @@ class sfm_controller():
     # init
     def __init__(self) -> None:
 
-        # goal tmp
-        self.current_goal_pose.position.x = 0
-        self.current_goal_pose.position.y = 0
+        
 
         # switches
         self.goal_set = False
@@ -92,8 +90,15 @@ class sfm_controller():
         self.current_surroundings_agents = []
         self.current_laser_ranges = numpy.zeros(360)
 
+        # goal tmp
+        self.current_goal_pose.position.x = 0
+        self.current_goal_pose.position.y = 0
+
         # ros things
-        self.tf_ = tf.TransformListener()
+        # rospy.init_node(self.node_name, anonymous=False)
+        print('????')
+        rospy.logdebug('start') #notworking
+        # self.tf_ = tf.TransformListener()
         self.action_client = actionlib.SimpleActionClient('move_base', MoveBaseAction) #???????
         self.action_server = actionlib.SimpleActionServer(
             self.action_name,
@@ -101,12 +106,12 @@ class sfm_controller():
             execute_cb=self.callback_sas,
             auto_start=False)
         self.action_server.start()
-        rospy.init_node(self.node_name, anonymous=False)
         self.publisher = rospy.Publisher(self.command_topic, Twist, queue_size=10)
         self.subscriber_odom = rospy.Subscriber(self.odometry_topic, Odometry, self.callback_sub_odom)
         self.subscriber_agents = rospy.Subscriber(self.agents_topic, AgentStates, self.callback_sub_agents)
         self.subscriber_scan = rospy.Subscriber(self.scan_topic, LaserScan, self.callback_sub_scan)
-
+        
+              
         # init
         self.load_change()
 
@@ -118,6 +123,7 @@ class sfm_controller():
 
     # simple action server execution callback
     def callback_sas(self, goal):
+        print('cb: sas')
         rospy.loginfo("Starting social drive")
         r_sleep = rospy.Rate(30)
         cancel_move_pub = rospy.Publisher("/move_base/cancel", GoalID, queue_size=1)
@@ -126,23 +132,24 @@ class sfm_controller():
 
         self.goal_set = True
         self.current_goal_pose.position = Point(goal.goal.x, goal.goal.y, goal.goal.z)
-        # self.current_waypoint = np.array(
-        #     [goal.goal.x, goal.goal.y, goal.goal.z], np.dtype("float64")
-        # )
 
         while not self.goal_reached():
             cmd_vel_msg = self.calculate_velocity()
             self.publisher.publish(cmd_vel_msg)
         self.publisher.publish(Twist())
+        rospy.loginfo('goal reached')
+        print('goal reached')
 
     # odometry callback
     def callback_sub_odom(self, called_data):
+        # print('cb: odom')
         self.current_pose_pose = called_data.pose.pose
         self.current_pose_covariance = called_data.pose.covariance
         self.current_velocity_twist = called_data.twist.twist
 
     # agent states callback
     def callback_sub_agents(self, called_data):
+        # print('cb: agen')
         self.current_surroundings_agents = []
         for agent_state in called_data.agent_states:
             if self.is_close(agent_state.pose):                  
@@ -150,6 +157,7 @@ class sfm_controller():
     
     # lidar callback
     def callback_sub_scan(self, called_data):
+        # print('cb: scan')
         self.current_laser_ranges = called_data.ranges
 
     # check if sth is close to us
@@ -304,7 +312,8 @@ class sfm_controller():
         if desired_velocity_norm > self.max_linear_vel:
             desired_velocity = self.max_linear_vel * desired_velocity / desired_velocity_norm
         robot_orientation = self.current_pose_pose.orientation
-        robot_angle = tf.transformations.euler_from_quaternion(robot_orientation)[2]
+        # robot_angle = tf.transformations.euler_from_quaternion(robot_orientation)[2]
+        robot_angle = quaternion_to_euler(robot_orientation)[2]
         angle_vel_to_base_x = calculate_v3_angle(desired_velocity, numpy.array([1, 0, 0], numpy.dtype("float64")))
         angle_vel_to_base_x += (-1)**(self.current_pose_pose.position.y > self.current_goal_pose.position.y) * robot_angle
         v = numpy.linalg.norm(self.desired_velocity, ord=2) * math.cos(angle_vel_to_base_x)
@@ -322,14 +331,43 @@ class sfm_controller():
         print(f'v: {self.desired_velocity_twist.linear.x}\nw: {self.desired_velocity_twist.angular.z}')
         return self.desired_velocity_twist
 
+    def run(self):
+        print('run?')
+        while not rospy.is_shutdown():
+            if (self.goal_set):
+                cmd_vel_msg = self.calculate_velocity()
+                self.publisher.publish(cmd_vel_msg)
+        pass
 
 def calculate_v3_angle(v1, v2): 
     return math.acos(numpy.dot(v1, v2) / (numpy.linalg.norm(v1) * numpy.linalg.norm(v2)))
 
+def quaternion_to_euler(q: Quaternion):
+    angles = numpy.array([0,0,0],numpy.dtype("float64"))
+
+    # // roll (x-axis rotation)
+    sinr_cosp = 2 * (q.w * q.x + q.y * q.z)
+    cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y)
+    angles[0] = math.atan2(sinr_cosp, cosr_cosp)
+
+    # // pitch (y-axis rotation)
+    sinp = math.sqrt(1 + 2 * (q.w * q.y - q.x * q.z))
+    cosp = math.sqrt(1 - 2 * (q.w * q.y - q.x * q.z))
+    angles[1] = 2 * math.atan2(sinp, cosp) - math.pi / 2
+
+    # // yaw (z-axis rotation)
+    siny_cosp = 2 * (q.w * q.z + q.x * q.y)
+    cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z)
+    angles[2] = math.atan2(siny_cosp, cosy_cosp)
+
+    return angles
+
 
 def main():
-    a = sfm_controller()
-    a.spam()
+    rospy.init_node(NODE_NAME, anonymous=False)
+    server = sfm_controller()
+    rospy.spin()
+    #
 
 if __name__ == '__main__':
     main()

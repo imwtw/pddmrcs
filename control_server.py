@@ -42,6 +42,9 @@ eps = .001
 
 class sfm_controller():
    
+    _feedback = SFMDriveFeedback()
+    _result = SFMDriveResult()
+
     # init
     def __init__(self) -> None:
 
@@ -104,7 +107,7 @@ class sfm_controller():
             self.action_name,
             SFMDriveAction,
             execute_cb=self.callback_sas,
-            auto_start=False)
+            auto_start=True)
         self.action_server.start()
         self.publisher = rospy.Publisher(self.command_topic, Twist, queue_size=10)
         # self.subscriber_odom = rospy.Subscriber(self.odometry_topic, Odometry, self.callback_sub_odom)

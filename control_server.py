@@ -95,8 +95,8 @@ class sfm_controller():
         self.current_goal_pose.position.y = 0
 
         # ros things
-        # rospy.init_node(self.node_name, anonymous=False)
-        print('????')
+        rospy.init_node(self.node_name, anonymous=False)
+        print('init ros node')
         rospy.logdebug('start') #notworking
         # self.tf_ = tf.TransformListener()
         self.action_client = actionlib.SimpleActionClient('move_base', MoveBaseAction) #???????
@@ -110,6 +110,14 @@ class sfm_controller():
         self.subscriber_odom = rospy.Subscriber(self.odometry_topic, Odometry, self.callback_sub_odom)
         self.subscriber_agents = rospy.Subscriber(self.agents_topic, AgentStates, self.callback_sub_agents)
         self.subscriber_scan = rospy.Subscriber(self.scan_topic, LaserScan, self.callback_sub_scan)
+
+        print('create goal?')
+        goal_tmp = MoveBaseGoal()
+        goal_tmp.target_pose.pose.position.x = 10
+        goal_tmp.target_pose.pose.position.y = 10
+        goal_tmp.target_pose.pose.position.z = 0
+        print('send goal?')
+        self.action_client.send_goal(goal_tmp)
         
               
         # init
@@ -364,19 +372,20 @@ def quaternion_to_euler(q: Quaternion):
 
 
 def main():
-    rospy.init_node(NODE_NAME, anonymous=False)
+    # rospy.init_node(NODE_NAME, anonymous=False)
     server = sfm_controller()
 
-    print('create client?')
-    server.action_client.wait_for_server()
-    goal_tmp = MoveBaseGoal()
-    goal_tmp.target_pose.pose.position.x = 10
-    goal_tmp.target_pose.pose.position.y = 10
-    goal_tmp.target_pose.pose.position.z = 0
-    server.action_client.send_goal(goal_tmp)
-    print('wait for result?')
-    server.action_client.wait_for_result()
-    print('result>?')
+    # print('wait for server?')
+    # server.action_client.wait_for_server()
+    # print('create goal?')
+    # goal_tmp = MoveBaseGoal()
+    # goal_tmp.target_pose.pose.position.x = 10
+    # goal_tmp.target_pose.pose.position.y = 10
+    # goal_tmp.target_pose.pose.position.z = 0
+    # server.action_client.send_goal(goal_tmp)
+    # print('wait for result?')
+    # server.action_client.wait_for_result()
+    # print('result>?')
 
     rospy.spin()
     #

@@ -149,19 +149,6 @@ class sfm_controller():
         self.current_pose_covariance = called_data.pose.covariance
         self.current_velocity_twist = called_data.twist.twist
 
-        if not self.goal_set:
-            self.goal_set = True
-            print('(in odom cb)')
-            print('wait for server?')
-            self.action_client.wait_for_server()
-            print('create goal?')
-            goal_tmp = MoveBaseGoal()
-            goal_tmp.target_pose.pose.position.x = 10
-            goal_tmp.target_pose.pose.position.y = 10
-            goal_tmp.target_pose.pose.position.z = 0
-            print('send goal?')
-            self.action_client.send_goal(goal_tmp)
-
     # agent states callback
     def callback_sub_agents(self, called_data):
         # print('cb: agen')
@@ -353,6 +340,7 @@ class sfm_controller():
                 cmd_vel_msg = self.calculate_velocity()
                 self.publisher.publish(cmd_vel_msg)
         pass
+
 
 def calculate_v3_angle(v1, v2): 
     return math.acos(numpy.dot(v1, v2) / (numpy.linalg.norm(v1) * numpy.linalg.norm(v2)))

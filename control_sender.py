@@ -131,7 +131,7 @@ class sfm_controller():
         cancel_move_pub.publish(cancel_msg)
 
         self.goal_set = True
-        self.current_goal_pose.position = Point(goal.goal.x, goal.goal.y, goal.goal.z)
+        self.current_goal_pose = goal.target_pose.pose
 
         while not self.goal_reached():
             cmd_vel_msg = self.calculate_velocity()
@@ -370,9 +370,9 @@ def main():
     print('create client?')
     server.action_client.wait_for_server()
     goal_tmp = MoveBaseGoal()
-    goal_tmp.goal.x = 10
-    goal_tmp.goal.y = 10
-    goal_tmp.goal.z = 0
+    goal_tmp.target_pose.pose.position.x = 10
+    goal_tmp.target_pose.pose.position.y = 10
+    goal_tmp.target_pose.pose.position.z = 0
     server.action_client.send_goal(goal_tmp)
     print('wait for result?')
     server.action_client.wait_for_result()

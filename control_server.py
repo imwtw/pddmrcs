@@ -111,13 +111,7 @@ class sfm_controller():
         self.subscriber_agents = rospy.Subscriber(self.agents_topic, AgentStates, self.callback_sub_agents)
         self.subscriber_scan = rospy.Subscriber(self.scan_topic, LaserScan, self.callback_sub_scan)
 
-        print('create goal?')
-        goal_tmp = MoveBaseGoal()
-        goal_tmp.target_pose.pose.position.x = 10
-        goal_tmp.target_pose.pose.position.y = 10
-        goal_tmp.target_pose.pose.position.z = 0
-        print('send goal?')
-        self.action_client.send_goal(goal_tmp)
+        
         
               
         # init
@@ -154,6 +148,15 @@ class sfm_controller():
         self.current_pose_pose = called_data.pose.pose
         self.current_pose_covariance = called_data.pose.covariance
         self.current_velocity_twist = called_data.twist.twist
+
+        print('(in odom cb)')
+        print('create goal?')
+        goal_tmp = MoveBaseGoal()
+        goal_tmp.target_pose.pose.position.x = 10
+        goal_tmp.target_pose.pose.position.y = 10
+        goal_tmp.target_pose.pose.position.z = 0
+        print('send goal?')
+        self.action_client.send_goal(goal_tmp)
 
     # agent states callback
     def callback_sub_agents(self, called_data):

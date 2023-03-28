@@ -149,14 +149,18 @@ class sfm_controller():
         self.current_pose_covariance = called_data.pose.covariance
         self.current_velocity_twist = called_data.twist.twist
 
-        print('(in odom cb)')
-        print('create goal?')
-        goal_tmp = MoveBaseGoal()
-        goal_tmp.target_pose.pose.position.x = 10
-        goal_tmp.target_pose.pose.position.y = 10
-        goal_tmp.target_pose.pose.position.z = 0
-        print('send goal?')
-        self.action_client.send_goal(goal_tmp)
+        if not self.goal_set:
+            self.goal_set = True
+            print('(in odom cb)')
+            print('wait for server?')
+            self.action_client.wait_for_server()
+            print('create goal?')
+            goal_tmp = MoveBaseGoal()
+            goal_tmp.target_pose.pose.position.x = 10
+            goal_tmp.target_pose.pose.position.y = 10
+            goal_tmp.target_pose.pose.position.z = 0
+            print('send goal?')
+            self.action_client.send_goal(goal_tmp)
 
     # agent states callback
     def callback_sub_agents(self, called_data):

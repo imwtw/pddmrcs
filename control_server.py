@@ -5,6 +5,7 @@ import numpy
 import rospy
 import actionlib
 # import tf
+from tf2_msgs.msg import TFMessage
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Inertia, Twist, Accel, Wrench, Pose, Point, Quaternion
@@ -12,43 +13,37 @@ from pedsim_msgs.msg import AgentStates, AgentState
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalID
 from simple_pid import PID
-from sfm_diff_drive.msg import (
-    SFMDriveFeedback,
-    SFMDriveResult,
-    SFMDriveAction,
-)
 
+
+RATE = 40
 GOAL_REACH_TOLERANCE = .5
 POSE_TOLERANCE_DEFAULT = 1
 MAX_LINEAR_VEL = .5
 MAX_ANGULAR_VEL = 1
-RELAXATION_TIME = .5
+# RELAXATION_TIME = .5
+RELAXATION_TIME = .1
 SAFE_DISTANCE_DEFAULT = 1
 OBSTACLE_FORCE_CONST = .8
 
 
 NODE_NAME = 'sfm_controller_node'
-ACTION_NAME = 'sfm_controller_action_node'
+# ACTION_NAME = 'sfm_controller_action_node'
+ACTION_NAME = 'move_base'
 COMMAND_TOPIC = '/pedbot/control/cmd_vel'
 AGENTS_TOPIC = '/pedsim_simulator/simulated_agents'
 ODOMETRY_TOPIC = '/pedsim_simulator/robot_position'
+TF_TOPIC = '/tf'
 LASER_SCAN_TOPIC = '/scan_filtered'
-HUMAN_MASS = 70
-ROBOT_MASS = 50
+HUMAN_MASS = 0
+ROBOT_MASS = 1
 MAX_DIST = 5
 
 hui_znaet = 1
-eps = .001
 
 class sfm_controller():
    
-    _feedback = SFMDriveFeedback()
-    _result = SFMDriveResult()
-
     # init
     def __init__(self) -> None:
-
-        
 
         # switches
         self.goal_set = False
@@ -59,6 +54,7 @@ class sfm_controller():
         self.action_name = ACTION_NAME
         self.command_topic = COMMAND_TOPIC
         self.odometry_topic = ODOMETRY_TOPIC
+        self.tf_topic = TF_TOPIC
         self.agents_topic = AGENTS_TOPIC
         self.scan_topic = LASER_SCAN_TOPIC
 
@@ -105,14 +101,15 @@ class sfm_controller():
         # self.action_client = actionlib.SimpleActionClient('move_base', MoveBaseAction) #???????
         self.action_server = actionlib.SimpleActionServer(
             self.action_name,
-            SFMDriveAction,
+            MoveBaseAction,
             execute_cb=self.callback_sas,
-            auto_start=True)
+            auto_start=False)
         self.action_server.start()
         self.publisher = rospy.Publisher(self.command_topic, Twist, queue_size=10)
         # self.subscriber_odom = rospy.Subscriber(self.odometry_topic, Odometry, self.callback_sub_odom)
-        # self.subscriber_agents = rospy.Subscriber(self.agents_topic, AgentStates, self.callback_sub_agents)
-        # self.subscriber_scan = rospy.Subscriber(self.scan_topic, LaserScan, self.callback_sub_scan)
+        self.subscriber_tf = rospy.Subscriber(self.tf_topic, TFMessage, self.callback_sub_tf)
+        self.subscriber_agents = rospy.Subscriber(self.agents_topic, AgentStates, self.callback_sub_agents)
+        self.subscriber_scan = rospy.Subscriber(self.scan_topic, LaserScan, self.callback_sub_scan)
 
         # init
         self.load_change()
@@ -126,28 +123,29 @@ class sfm_controller():
     # simple action server execution callback
     def callback_sas(self, goal):
         print('cb: sas')
-        rospy.loginfo("Starting social drive")
-        r_sleep = rospy.Rate(30)
         cancel_move_pub = rospy.Publisher("/move_base/cancel", GoalID, queue_size=1)
         cancel_msg = GoalID()
         cancel_move_pub.publish(cancel_msg)
-
         self.goal_set = True
         self.current_goal_pose = goal.target_pose.pose
+        self.run()
+        self.action_server.set_succeeded('done')
 
-        while not self.goal_reached():
-            cmd_vel_msg = self.calculate_velocity()
-            self.publisher.publish(cmd_vel_msg)
-        self.publisher.publish(Twist())
-        rospy.loginfo('goal reached')
-        print('goal reached')
-
-    # odometry callback
+    # odometry callback - works incorrect in simulator itself
     def callback_sub_odom(self, called_data):
         # print('cb: odom')
         self.current_pose_pose = called_data.pose.pose
         self.current_pose_covariance = called_data.pose.covariance
         self.current_velocity_twist = called_data.twist.twist
+
+    # tf callback
+    def callback_sub_tf(self, called_data):
+        # print('cb: tf')
+        cur_transform = called_data.transforms[0].transform
+        self.current_pose_pose.position.x = cur_transform.translation.x
+        self.current_pose_pose.position.y = cur_transform.translation.y
+        self.current_pose_pose.position.z = cur_transform.translation.z
+        self.current_pose_pose.orientation = cur_transform.rotation
 
     # agent states callback
     def callback_sub_agents(self, called_data):
@@ -234,7 +232,7 @@ class sfm_controller():
             coef_a = 1
             coef_b = 1
             social_force += coef_a * (robot_to_agent_vel_norm * robot_to_agent_dir / collision_time) * math.exp( - collision_dist_norm / coef_b) * (collision_dist / collision_dist_norm)
-        print("social force:", social_force)
+        print("social force: ", social_force)
         return social_force  
         
     # calculate potential force from obstacles - repulse_from_closest_inverse_exponential
@@ -259,7 +257,7 @@ class sfm_controller():
                 tmp_val = diff_robot_laser[i]
                 min_index = i
         if diff_robot_laser[min_index] < 1:
-            print("wall distance: ", diff_robot_laser[min_index])
+            # print("wall distance: ", diff_robot_laser[min_index])
             laser_pos = -1 * numpy.array(
                 [   self.current_laser_ranges[min_index]
                     * math.cos(math.radians(min_index - 180)),
@@ -281,9 +279,10 @@ class sfm_controller():
 
     # calculate total potential force - plane_no_torque
     def calculate_force(self) -> Wrench:
-        complete_force = (self.force_factor_desired * self.calculate_goal_force()
-                        + self.force_factor_obstacle * self.calculate_obstacle_force()
-                        + self.force_factor_social * self.calculate_social_force())
+        # complete_force = (self.force_factor_desired * self.calculate_goal_force()
+        #                 + self.force_factor_obstacle * self.calculate_obstacle_force()
+        #                 + self.force_factor_social * self.calculate_social_force())
+        complete_force = self.force_factor_desired * self.calculate_goal_force()
         self.current_force_wrench.force.x = complete_force[0]
         self.current_force_wrench.force.y = complete_force[1]
         self.current_force_wrench.force.z = complete_force[2]
@@ -299,14 +298,15 @@ class sfm_controller():
         return self.current_acceleration_accel 
 
     # calculate target velocity in order to satisfy acceleration - curvature_only
-    def calculate_velocity(self, *, dt=.001) -> Twist:
+    def calculate_velocity(self, *, dt=(RATE**-1)) -> Twist:
 
         # calculate acceleration first
         self.calculate_acceleration()
 
         # calculate new linear velocity
+        self.current_velocity_twist = self.desired_velocity_twist
         dvx = self.current_acceleration_accel.linear.x * dt
-        dvy = self.current_acceleration_accel.linear.x * dt
+        dvy = self.current_acceleration_accel.linear.y * dt
         desired_velocity = numpy.array([self.current_velocity_twist.linear.x + dvx, 
                                         self.current_velocity_twist.linear.y + dvy, 
                                         0],numpy.dtype("float64"))
@@ -314,14 +314,17 @@ class sfm_controller():
         if desired_velocity_norm > self.max_linear_vel:
             desired_velocity = self.max_linear_vel * desired_velocity / desired_velocity_norm
         robot_orientation = self.current_pose_pose.orientation
-        # robot_angle = tf.transformations.euler_from_quaternion(robot_orientation)[2]
-        robot_angle = quaternion_to_euler(robot_orientation)[2]
+        # robot_angle_offset = tf.transformations.euler_from_quaternion(robot_orientation)[2]
+        robot_angle_offset = quaternion_to_euler(robot_orientation)[2]
         angle_vel_to_base_x = calculate_v3_angle(desired_velocity, numpy.array([1, 0, 0], numpy.dtype("float64")))
-        angle_vel_to_base_x += (-1)**(self.current_pose_pose.position.y > self.current_goal_pose.position.y) * robot_angle
-        v = numpy.linalg.norm(self.desired_velocity, ord=2) * math.cos(angle_vel_to_base_x)
+        angle_vel_to_base_x += (-1)**(self.current_pose_pose.position.y < self.current_goal_pose.position.y) * robot_angle_offset
+        if angle_vel_to_base_x > math.pi: angle_vel_to_base_x -= 2*math.pi
+        v = numpy.linalg.norm(desired_velocity, ord=2) * math.cos(angle_vel_to_base_x)
 
         # calculate new angular velocity either through acceleration or through curvature or ...
-        w = self.pid_rotation( - angle_vel_to_base_x)
+        w = self.pid_rotation(-angle_vel_to_base_x)
+        # w = 0
+        # w = - angle_vel_to_base_x
         # curvature = ??????
         # self.desired_velocity_twist.angular.z = curvature * self.desired_velocity_twist.linear.x
         # dw = self.current_acceleration_accel.angular.z * dt
@@ -330,20 +333,31 @@ class sfm_controller():
         # form output message
         self.desired_velocity_twist.linear.x = v
         self.desired_velocity_twist.angular.z = w
-        print(f'v: {self.desired_velocity_twist.linear.x}\nw: {self.desired_velocity_twist.angular.z}')
+        print(f'desired vel: {desired_velocity}')
+        print(f'cmd v: {self.desired_velocity_twist.linear.x}\ncmd w: {self.desired_velocity_twist.angular.z}')
+        print(f'my angle is {robot_angle_offset}')
+        print(f'vel to my x angle is {angle_vel_to_base_x}')
+        print(f'my pos is {self.current_pose_pose.position.x} {self.current_pose_pose.position.y}')
         return self.desired_velocity_twist
 
     def run(self):
         print('run?')
+        
         while not rospy.is_shutdown():
             if (self.goal_set):
-                cmd_vel_msg = self.calculate_velocity()
-                self.publisher.publish(cmd_vel_msg)
-        pass
+                while not self.goal_reached():
+                    self.publisher.publish(self.calculate_velocity())
+                    rospy.sleep(RATE**(-1))
+                self.goal_set = False
+                self.publisher.publish(Twist())
+                print('goal reached')
+                return True
+            rospy.sleep(1)
+        return False
 
 
 def calculate_v3_angle(v1, v2): 
-    return math.acos(numpy.dot(v1, v2) / (numpy.linalg.norm(v1) * numpy.linalg.norm(v2)))
+    return math.acos(numpy.dot(v1, v2) / (numpy.linalg.norm(v1, ord=2) * numpy.linalg.norm(v2, ord=2)))
 
 def quaternion_to_euler(q: Quaternion):
     angles = numpy.array([0,0,0],numpy.dtype("float64"))
@@ -367,23 +381,10 @@ def quaternion_to_euler(q: Quaternion):
 
 
 def main():
-    # rospy.init_node(NODE_NAME, anonymous=False)
     server = sfm_controller()
-
-    # print('wait for server?')
-    # server.action_client.wait_for_server()
-    # print('create goal?')
-    # goal_tmp = MoveBaseGoal()
-    # goal_tmp.target_pose.pose.position.x = 10
-    # goal_tmp.target_pose.pose.position.y = 10
-    # goal_tmp.target_pose.pose.position.z = 0
-    # server.action_client.send_goal(goal_tmp)
-    # print('wait for result?')
-    # server.action_client.wait_for_result()
-    # print('result>?')
-
     rospy.spin()
-    #
+
+    
 
 if __name__ == '__main__':
     main()

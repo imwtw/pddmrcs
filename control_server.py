@@ -4,7 +4,6 @@ import math
 import numpy
 import rospy
 import actionlib
-# import tf
 from tf2_msgs.msg import TFMessage
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
@@ -15,13 +14,12 @@ from actionlib_msgs.msg import GoalID
 from simple_pid import PID
 
 
-RATE = 40
+RATE = 20
 GOAL_REACH_TOLERANCE = .5
 POSE_TOLERANCE_DEFAULT = 1
-MAX_LINEAR_VEL = .5
+MAX_LINEAR_VEL = 1
 MAX_ANGULAR_VEL = 1
-# RELAXATION_TIME = .5
-RELAXATION_TIME = .1
+RELAXATION_TIME = .5
 SAFE_DISTANCE_DEFAULT = 1
 OBSTACLE_FORCE_CONST = .8
 
@@ -75,8 +73,8 @@ class sfm_controller():
         self.force_factor_obstacle = 10
 
         # PID
-        self.pid_rotation = PID(0.25, 0.1, 0.0001, setpoint=0)
-        self.pid_rotation.output_limits = (-0.75, 0.75)
+        # self.angular_velocity_controller = PID(0.25, 0.1, 0.0001, setpoint=0)
+        self.angular_velocity_controller = PID(Kp = 0.6, Ki = 0, Kd = 0, setpoint=0, output_limits = (-0.75, 0.75))
 
         # empty structures
         self.inertia = Inertia()
@@ -94,11 +92,8 @@ class sfm_controller():
         self.current_goal_pose.position.y = 0
 
         # ros things
-        rospy.init_node(self.node_name, anonymous=False)
+        rospy.init_node(self.node_name, anonymous=False, disable_signals=False)
         print('init ros node')
-        rospy.logdebug('start') #notworking
-        # self.tf_ = tf.TransformListener()
-        # self.action_client = actionlib.SimpleActionClient('move_base', MoveBaseAction) #???????
         self.action_server = actionlib.SimpleActionServer(
             self.action_name,
             MoveBaseAction,
@@ -106,12 +101,12 @@ class sfm_controller():
             auto_start=False)
         self.action_server.start()
         self.publisher = rospy.Publisher(self.command_topic, Twist, queue_size=10)
-        # self.subscriber_odom = rospy.Subscriber(self.odometry_topic, Odometry, self.callback_sub_odom)
+        # self.subscriber_odom = rospy.Subscriber(self.odometry_topic, Odometry, self.callback_sub_odom) #not working
         self.subscriber_tf = rospy.Subscriber(self.tf_topic, TFMessage, self.callback_sub_tf)
         self.subscriber_agents = rospy.Subscriber(self.agents_topic, AgentStates, self.callback_sub_agents)
         self.subscriber_scan = rospy.Subscriber(self.scan_topic, LaserScan, self.callback_sub_scan)
 
-        # init
+        # init functions
         self.load_change()
 
     # check if goal is reached
@@ -129,7 +124,8 @@ class sfm_controller():
         self.goal_set = True
         self.current_goal_pose = goal.target_pose.pose
         self.run()
-        self.action_server.set_succeeded('done')
+        self.action_server.set_succeeded()      
+        
 
     # odometry callback - works incorrect in simulator itself
     def callback_sub_odom(self, called_data):
@@ -295,16 +291,17 @@ class sfm_controller():
         self.current_acceleration_accel.linear.x = self.current_force_wrench.force.x / self.inertia.m
         self.current_acceleration_accel.linear.y = self.current_force_wrench.force.y / self.inertia.m
         self.current_acceleration_accel.angular.z = self.current_force_wrench.torque.z / self.inertia.izz
+        # print(f'desired acc: \n{self.current_acceleration_accel.linear}')
         return self.current_acceleration_accel 
 
     # calculate target velocity in order to satisfy acceleration - curvature_only
-    def calculate_velocity(self, *, dt=(RATE**-1)) -> Twist:
+    def calculate_velocity(self, *, dt=(RATE**-1)*10) -> Twist:
 
         # calculate acceleration first
         self.calculate_acceleration()
 
-        # calculate new linear velocity
-        self.current_velocity_twist = self.desired_velocity_twist
+        # calculate some angles
+        self.current_velocity_twist = self.desired_velocity_twist #eto nepravilno
         dvx = self.current_acceleration_accel.linear.x * dt
         dvy = self.current_acceleration_accel.linear.y * dt
         desired_velocity = numpy.array([self.current_velocity_twist.linear.x + dvx, 
@@ -314,40 +311,44 @@ class sfm_controller():
         if desired_velocity_norm > self.max_linear_vel:
             desired_velocity = self.max_linear_vel * desired_velocity / desired_velocity_norm
         robot_orientation = self.current_pose_pose.orientation
-        # robot_angle_offset = tf.transformations.euler_from_quaternion(robot_orientation)[2]
         robot_angle_offset = quaternion_to_euler(robot_orientation)[2]
-        angle_vel_to_base_x = calculate_v3_angle(desired_velocity, numpy.array([1, 0, 0], numpy.dtype("float64")))
-        angle_vel_to_base_x += (-1)**(self.current_pose_pose.position.y < self.current_goal_pose.position.y) * robot_angle_offset
-        if angle_vel_to_base_x > math.pi: angle_vel_to_base_x -= 2*math.pi
-        v = numpy.linalg.norm(desired_velocity, ord=2) * math.cos(angle_vel_to_base_x)
+        angle_vel_to_base_x = ( (-1)**(self.current_pose_pose.position.y > self.current_goal_pose.position.y) #acos compensation
+                                * calculate_v3_angle(desired_velocity, numpy.array([1, 0, 0], numpy.dtype("float64")))) 
+        angle_vel_to_my_x = robot_angle_offset - angle_vel_to_base_x
+        if abs(angle_vel_to_my_x) > math.pi: angle_vel_to_my_x -= 2*math.pi*numpy.sign(angle_vel_to_my_x)
 
-        # calculate new angular velocity either through acceleration or through curvature or ...
-        w = self.pid_rotation(-angle_vel_to_base_x)
-        # w = 0
-        # w = - angle_vel_to_base_x
-        # curvature = ??????
-        # self.desired_velocity_twist.angular.z = curvature * self.desired_velocity_twist.linear.x
-        # dw = self.current_acceleration_accel.angular.z * dt
-        # w = self.current_velocity_twist.angular.z + dw
+        # calculate new linear velocity
+        v = 0 
+        if abs(angle_vel_to_my_x) < (math.pi/2): 
+            v = numpy.linalg.norm(desired_velocity, ord=2) * math.cos(angle_vel_to_my_x)
 
+        # calculate new angular velocity (either through acceleration or through curvature or ...)
+                        # dw = self.current_acceleration_accel.angular.z * dt
+                        # w = self.current_velocity_twist.angular.z + dw
+                                        # curvature = ??????
+                                        # w = curvature * v
+        w = self.angular_velocity_controller(angle_vel_to_my_x)
+        
         # form output message
         self.desired_velocity_twist.linear.x = v
         self.desired_velocity_twist.angular.z = w
-        print(f'desired vel: {desired_velocity}')
-        print(f'cmd v: {self.desired_velocity_twist.linear.x}\ncmd w: {self.desired_velocity_twist.angular.z}')
-        print(f'my angle is {robot_angle_offset}')
-        print(f'vel to my x angle is {angle_vel_to_base_x}')
         print(f'my pos is {self.current_pose_pose.position.x} {self.current_pose_pose.position.y}')
+        print(f'desired vel: {desired_velocity}')
+        print(f'desired vel angle to base x: {angle_vel_to_base_x}')
+        print(f'my angle is {robot_angle_offset}')
+        print(f'desired vel angle to my x is {angle_vel_to_my_x}')
+        print(f'cmd v: {self.desired_velocity_twist.linear.x}\ncmd w: {self.desired_velocity_twist.angular.z}')
         return self.desired_velocity_twist
 
     def run(self):
-        print('run?')
-        
+        print('run')
         while not rospy.is_shutdown():
             if (self.goal_set):
                 while not self.goal_reached():
+                    print('\n__________________\n__________________\nstate\n__________________')
                     self.publisher.publish(self.calculate_velocity())
                     rospy.sleep(RATE**(-1))
+                    print('__________________\n__________________')
                 self.goal_set = False
                 self.publisher.publish(Twist())
                 print('goal reached')
@@ -379,13 +380,10 @@ def quaternion_to_euler(q: Quaternion):
 
     return angles
 
-
 def main():
+    # rospy.init_node(NODE_NAME, anonymous=False, disable_signals=False)
     server = sfm_controller()
-    rospy.spin()
-
     
-
 if __name__ == '__main__':
     main()
 

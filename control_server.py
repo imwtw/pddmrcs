@@ -14,7 +14,7 @@ from actionlib_msgs.msg import GoalID
 from simple_pid import PID
 
 
-RATE = 20
+RATE = 40
 GOAL_REACH_TOLERANCE = .5
 POSE_TOLERANCE_DEFAULT = 1
 MAX_LINEAR_VEL = 1
@@ -25,7 +25,6 @@ OBSTACLE_FORCE_CONST = .8
 
 
 NODE_NAME = 'sfm_controller_node'
-# ACTION_NAME = 'sfm_controller_action_node'
 ACTION_NAME = 'move_base'
 COMMAND_TOPIC = '/pedbot/control/cmd_vel'
 AGENTS_TOPIC = '/pedsim_simulator/simulated_agents'
@@ -44,6 +43,7 @@ class sfm_controller():
     def __init__(self) -> None:
 
         # switches
+        self.is_ok = True
         self.goal_set = False
         self.loaded = False
 
@@ -111,6 +111,7 @@ class sfm_controller():
 
     # check if goal is reached
     def goal_reached(self) -> bool:
+        # return False
         pose_na = numpy.array([self.current_pose_pose.position.x, self.current_pose_pose.position.y], numpy.dtype("float64"))
         goal_na = numpy.array([self.current_goal_pose.position.x, self.current_goal_pose.position.y], numpy.dtype("float64"))
         return numpy.linalg.norm(pose_na - goal_na, ord=2) <= GOAL_REACH_TOLERANCE
@@ -126,7 +127,6 @@ class sfm_controller():
         self.run()
         self.action_server.set_succeeded()      
         
-
     # odometry callback - works incorrect in simulator itself
     def callback_sub_odom(self, called_data):
         # print('cb: odom')
@@ -228,6 +228,10 @@ class sfm_controller():
             coef_a = 1
             coef_b = 1
             social_force += coef_a * (robot_to_agent_vel_norm * robot_to_agent_dir / collision_time) * math.exp( - collision_dist_norm / coef_b) * (collision_dist / collision_dist_norm)
+            # print('_____________________________')
+            # print(f'agent {agent.id}')
+            # print('_____________________________')
+            # print(f'dist: {actual_dist}')
         print("social force: ", social_force)
         return social_force  
         
@@ -275,10 +279,10 @@ class sfm_controller():
 
     # calculate total potential force - plane_no_torque
     def calculate_force(self) -> Wrench:
-        # complete_force = (self.force_factor_desired * self.calculate_goal_force()
-        #                 + self.force_factor_obstacle * self.calculate_obstacle_force()
-        #                 + self.force_factor_social * self.calculate_social_force())
-        complete_force = self.force_factor_desired * self.calculate_goal_force()
+        complete_force = (self.force_factor_desired * self.calculate_goal_force()
+                        + self.force_factor_obstacle * self.calculate_obstacle_force()
+                        + self.force_factor_social * self.calculate_social_force())
+        # complete_force = self.force_factor_social * self.calculate_social_force()
         self.current_force_wrench.force.x = complete_force[0]
         self.current_force_wrench.force.y = complete_force[1]
         self.current_force_wrench.force.z = complete_force[2]
@@ -334,27 +338,38 @@ class sfm_controller():
         self.desired_velocity_twist.angular.z = w
         print(f'my pos is {self.current_pose_pose.position.x} {self.current_pose_pose.position.y}')
         print(f'desired vel: {desired_velocity}')
-        print(f'desired vel angle to base x: {angle_vel_to_base_x}')
-        print(f'my angle is {robot_angle_offset}')
-        print(f'desired vel angle to my x is {angle_vel_to_my_x}')
+        # print(f'desired vel angle to base x: {angle_vel_to_base_x}')
+        # print(f'my angle is {robot_angle_offset}')
+        # print(f'desired vel angle to my x is {angle_vel_to_my_x}')
         print(f'cmd v: {self.desired_velocity_twist.linear.x}\ncmd w: {self.desired_velocity_twist.angular.z}')
         return self.desired_velocity_twist
 
     def run(self):
         print('run')
-        while not rospy.is_shutdown():
+        while (not rospy.is_shutdown()) and self.is_ok:
             if (self.goal_set):
-                while not self.goal_reached():
+                while (not self.goal_reached()) and self.is_ok:
                     print('\n__________________\n__________________\nstate\n__________________')
                     self.publisher.publish(self.calculate_velocity())
-                    rospy.sleep(RATE**(-1))
                     print('__________________\n__________________')
+                    rospy.sleep(RATE**(-1))
                 self.goal_set = False
-                self.publisher.publish(Twist())
                 print('goal reached')
+                self.stop()
                 return True
             rospy.sleep(1)
         return False
+
+        print('not run')
+        while True:
+            self.calculate_social_force()
+            rospy.sleep(1)
+    
+    def stop(self):
+        print('\n__________________\n__________________\nstate\n__________________')
+        self.calculate_velocity()
+        print('__________________\n__________________')
+        self.publisher.publish(Twist())
 
 
 def calculate_v3_angle(v1, v2): 

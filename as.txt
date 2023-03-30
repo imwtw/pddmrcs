@@ -1,6 +1,0 @@
-export PYTHONPATH=$PYTHONPATH:/home/wtw-ub/workspace/cardif/melodic/devel/lib/python2.7/dist-packages
-
-source workspace/pedsim/devel/setup.bash
-python3 workspace/pddmrcs/control_server.py
-
-python3 workspace/pddmrcs/control_sender.py

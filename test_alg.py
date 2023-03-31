@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import matplotlib.pyplot as plt
 from control_server import *
 
 
@@ -43,13 +44,14 @@ def social_force_test(robot_pose, robot_vel, agent_vel, agent_pose):
     print(f'collision_time: {collision_time}')
     print(f'social_force: {social_force}')
     
-    robot_vel += social_force
-    robot_pose += robot_vel
-    agent_pose += agent_vel
+    robot_vel += social_force *dt
+    robot_pose += robot_vel *dt
+    agent_pose += agent_vel *dt
     print(f'robot_pose: {robot_pose}')
     print(f'agent_pose: {agent_pose}')
     print('\n')
 
+dt = .01
 robot_pose = numpy.array([0, 1, 0], numpy.dtype("float64"))
 robot_vel = numpy.array([1, 0, 0], numpy.dtype("float64"))
 agent_vel = numpy.array([-1, 1, 0], numpy.dtype("float64"))
@@ -57,5 +59,21 @@ agent_pose = numpy.array([2, 0, 0], numpy.dtype("float64"))
 print(f'robot_pose: {robot_pose}')
 print(f'agent_pose: {agent_pose}')
 print('\n')
-for i in range(10):
+
+array_r_x = []
+array_r_y = []
+array_a_x = []
+array_a_y = []
+for i in range(100):
     social_force_test(robot_pose, robot_vel, agent_vel, agent_pose)
+    array_r_x.append(robot_pose[0])
+    array_r_y.append(robot_pose[1])
+    array_a_x.append(agent_pose[0])
+    array_a_y.append(agent_pose[1])
+    if (numpy.linalg.norm(robot_pose - agent_pose) < .5): break
+
+plt.plot(array_r_x, array_r_y)
+plt.plot(array_a_x, array_a_y)
+plt.xlim((0,3))
+plt.ylim((0,3))
+plt.savefig('/home/wtw-ub/workspace/pddmrcs/plt.png')

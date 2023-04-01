@@ -22,6 +22,7 @@ MAX_ANGULAR_VEL = 1
 RELAXATION_TIME = .5
 SAFE_DISTANCE_DEFAULT = 1
 OBSTACLE_FORCE_CONST = .8
+EPS = 1e-3
 
 
 NODE_NAME = 'sfm_controller_node'
@@ -201,6 +202,43 @@ class sfm_controller():
     # calculate potential force from social agents - inverse_exponential
     def calculate_social_force(self):
         social_force = numpy.array([0,0,0], numpy.dtype("float64"))
+
+        coef_a = 2
+        coef_b = 3.5
+
+        # actual_dist = robot_pose - agent_pose
+        # actual_dist_norm = numpy.linalg.norm(actual_dist, ord=2)
+        # robot_vel_norm = numpy.linalg.norm(robot_vel, ord=2)
+        # agent_to_robot_vel_x = agent_vel[0] - robot_vel[0]
+        # agent_to_robot_vel_y = agent_vel[1] - robot_vel[1]
+        # agent_to_robot_vel = numpy.array([agent_to_robot_vel_x, agent_to_robot_vel_y, 0], numpy.dtype("float64"))
+        # agent_to_robot_vel_norm = numpy.linalg.norm(agent_to_robot_vel, ord=2)
+        # if agent_to_robot_vel_norm < EPS:
+        #     # print('chasing?')
+        #     return numpy.array([0,0,0], numpy.dtype('float64'))
+        # agent_to_robot_vel_angle_cos = numpy.dot(actual_dist, agent_to_robot_vel) / (actual_dist_norm * agent_to_robot_vel_norm)
+        # if agent_to_robot_vel_angle_cos < 0: 
+        #     # print('not even close?')
+        #     return numpy.array([0,0,0], numpy.dtype('float64'))
+        # agent_to_robot_vel_unit = agent_to_robot_vel / agent_to_robot_vel_norm
+        # agent_to_robot_dist = actual_dist_norm * agent_to_robot_vel_angle_cos * agent_to_robot_vel_unit
+        # collision_dist = actual_dist - agent_to_robot_dist
+        # collision_dist_norm = numpy.linalg.norm(collision_dist, ord=2)
+        # if collision_dist_norm < EPS: 
+        #     collision_dist = EPS * numpy.cross(robot_vel/robot_vel_norm, 
+        #                                         numpy.array([0,0,1],numpy.dtype('float64')))
+        #     collision_dist_norm = EPS
+        # agent_to_robot_dist_norm = numpy.linalg.norm(agent_to_robot_dist, ord=2)
+        # social_force = coef_a * agent_to_robot_dist_norm * math.exp( - collision_dist_norm / coef_b) * (collision_dist / collision_dist_norm)
+        # if (not iteration%PLOT_PERIOD_TICKS) and (iteration >= (0*RATE)):
+        #     # plot_it(agent_pose, agent_to_robot_dist, color='purple')
+        #     # plot_it(robot_pose, -collision_dist, color='orange')
+        #     plot_it(robot_pose, [social_force[0],social_force[1]], color='red', arrow=True)
+        #     pass
+        # # print(f'social force: {social_force[0]: 3.3f} {social_force[1]: 3.3f}')
+        # return social_force
+
+
         robot_vel = numpy.array([self.current_velocity_twist.linear.x, self.current_velocity_twist.linear.y, 0], numpy.dtype("float64"))
         robot_vel_norm = numpy.linalg.norm(robot_vel, ord=2)
         for agent in self.current_surroundings_agents:
@@ -210,24 +248,23 @@ class sfm_controller():
             actual_dist_norm = numpy.linalg.norm(actual_dist, ord=2)
             agent_vel = numpy.array([agent.twist.linear.x, agent.twist.linear.y, 0], numpy.dtype("float64"))
             agent_vel_norm = numpy.linalg.norm(agent_vel, ord=2)
-            robot_to_agent_vel_norm = numpy.linalg.norm(numpy.cross(robot_vel, agent_vel), ord=2) / agent_vel_norm
-            agent_vel_unit = agent_vel / agent_vel_norm
-            agent_vel_perp_unit = numpy.cross(agent_vel_unit, numpy.array([0,0,1], numpy.dtype("float64")))
-            robot_to_agent_dir = (-1)**(numpy.dot(actual_dist, robot_vel) > 0)
-            robot_to_agent_vel = agent_vel_perp_unit * robot_to_agent_vel_norm * robot_to_agent_dir
-            agent_to_robot_vel_x = agent.twist.linear.x - robot_to_agent_vel[0]
-            agent_to_robot_vel_y = agent.twist.linear.y - robot_to_agent_vel[1]
+            agent_to_robot_vel_x = agent_vel[0] - robot_vel[0]
+            agent_to_robot_vel_y = agent_vel[1] - robot_vel[1]
             agent_to_robot_vel = numpy.array([agent_to_robot_vel_x, agent_to_robot_vel_y, 0], numpy.dtype("float64"))
             agent_to_robot_vel_norm = numpy.linalg.norm(agent_to_robot_vel, ord=2)
             agent_to_robot_vel_angle_cos = numpy.dot(actual_dist, agent_to_robot_vel) / (actual_dist_norm * agent_to_robot_vel_norm)
+            if agent_to_robot_vel_angle_cos < 0: 
+                continue
             agent_to_robot_vel_unit = agent_to_robot_vel / agent_to_robot_vel_norm
             agent_to_robot_dist = actual_dist_norm * agent_to_robot_vel_angle_cos * agent_to_robot_vel_unit
-            collision_time =  numpy.linalg.norm(agent_to_robot_dist / agent_to_robot_vel_norm, ord=2)
             collision_dist = actual_dist - agent_to_robot_dist
             collision_dist_norm = numpy.linalg.norm(collision_dist, ord=2)
-            coef_a = 1
-            coef_b = 1
-            social_force += coef_a * (robot_to_agent_vel_norm * robot_to_agent_dir / collision_time) * math.exp( - collision_dist_norm / coef_b) * (collision_dist / collision_dist_norm)
+            if collision_dist_norm < EPS: 
+                collision_dist = EPS * numpy.cross(robot_vel/robot_vel_norm, 
+                                                    numpy.array([0,0,1],numpy.dtype('float64')))
+                collision_dist_norm = EPS
+            agent_to_robot_dist_norm = numpy.linalg.norm(agent_to_robot_dist, ord=2)
+            social_force += coef_a * agent_to_robot_dist_norm * math.exp( - collision_dist_norm / coef_b) * (collision_dist / collision_dist_norm)
             # print('_____________________________')
             # print(f'agent {agent.id}')
             # print('_____________________________')

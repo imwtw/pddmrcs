@@ -1,0 +1,840 @@
+
+
+coef_g:  0.600, coef_a:  1.500, coef_b:  2.000
+cnt_ok:  0.940
+cnt_ne_uspel:  0.020
+cnt_ploho:  0.040
+{'ok': 0.94, 'ne uspel': 0.02, 'ploho': 0.04}
+
+
+coef_g:  0.600, coef_a:  1.500, coef_b:  2.500
+cnt_ok:  0.940
+cnt_ne_uspel:  0.040
+cnt_ploho:  0.020
+{'ok': 0.94, 'ne uspel': 0.04, 'ploho': 0.02}
+
+
+coef_g:  0.600, coef_a:  1.500, coef_b:  3.000
+cnt_ok:  0.930
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.020
+{'ok': 0.93, 'ne uspel': 0.05, 'ploho': 0.02}
+
+
+coef_g:  0.600, coef_a:  1.500, coef_b:  3.500
+cnt_ok:  0.900
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.050
+{'ok': 0.9, 'ne uspel': 0.05, 'ploho': 0.05}
+
+
+coef_g:  0.600, coef_a:  1.700, coef_b:  2.000
+cnt_ok:  0.890
+cnt_ne_uspel:  0.090
+cnt_ploho:  0.020
+{'ok': 0.89, 'ne uspel': 0.09, 'ploho': 0.02}
+
+
+coef_g:  0.600, coef_a:  1.700, coef_b:  2.500
+cnt_ok:  0.920
+cnt_ne_uspel:  0.040
+cnt_ploho:  0.040
+{'ok': 0.92, 'ne uspel': 0.04, 'ploho': 0.04}
+
+
+coef_g:  0.600, coef_a:  1.700, coef_b:  3.000
+cnt_ok:  0.900
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.050
+{'ok': 0.9, 'ne uspel': 0.05, 'ploho': 0.05}
+
+
+coef_g:  0.600, coef_a:  1.700, coef_b:  3.500
+cnt_ok:  0.900
+cnt_ne_uspel:  0.080
+cnt_ploho:  0.020
+{'ok': 0.9, 'ne uspel': 0.08, 'ploho': 0.02}
+
+
+coef_g:  0.600, coef_a:  1.900, coef_b:  2.000
+cnt_ok:  0.940
+cnt_ne_uspel:  0.040
+cnt_ploho:  0.020
+{'ok': 0.94, 'ne uspel': 0.04, 'ploho': 0.02}
+
+
+coef_g:  0.600, coef_a:  1.900, coef_b:  2.500
+cnt_ok:  0.800
+cnt_ne_uspel:  0.140
+cnt_ploho:  0.060
+{'ok': 0.8, 'ne uspel': 0.14, 'ploho': 0.06}
+
+
+coef_g:  0.600, coef_a:  1.900, coef_b:  3.000
+cnt_ok:  0.860
+cnt_ne_uspel:  0.130
+cnt_ploho:  0.010
+{'ok': 0.86, 'ne uspel': 0.13, 'ploho': 0.01}
+
+
+coef_g:  0.600, coef_a:  1.900, coef_b:  3.500
+cnt_ok:  0.840
+cnt_ne_uspel:  0.130
+cnt_ploho:  0.030
+{'ok': 0.84, 'ne uspel': 0.13, 'ploho': 0.03}
+
+
+coef_g:  0.600, coef_a:  2.100, coef_b:  2.000
+cnt_ok:  0.890
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.060
+{'ok': 0.89, 'ne uspel': 0.05, 'ploho': 0.06}
+
+
+coef_g:  0.600, coef_a:  2.100, coef_b:  2.500
+cnt_ok:  0.870
+cnt_ne_uspel:  0.100
+cnt_ploho:  0.030
+{'ok': 0.87, 'ne uspel': 0.1, 'ploho': 0.03}
+
+
+coef_g:  0.600, coef_a:  2.100, coef_b:  3.000
+cnt_ok:  0.900
+cnt_ne_uspel:  0.070
+cnt_ploho:  0.030
+{'ok': 0.9, 'ne uspel': 0.07, 'ploho': 0.03}
+
+
+coef_g:  0.600, coef_a:  2.100, coef_b:  3.500
+cnt_ok:  0.940
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.010
+{'ok': 0.94, 'ne uspel': 0.05, 'ploho': 0.01}
+
+
+coef_g:  0.600, coef_a:  2.300, coef_b:  2.000
+cnt_ok:  0.890
+cnt_ne_uspel:  0.090
+cnt_ploho:  0.020
+{'ok': 0.89, 'ne uspel': 0.09, 'ploho': 0.02}
+
+
+coef_g:  0.600, coef_a:  2.300, coef_b:  2.500
+cnt_ok:  0.900
+cnt_ne_uspel:  0.080
+cnt_ploho:  0.020
+{'ok': 0.9, 'ne uspel': 0.08, 'ploho': 0.02}
+
+
+coef_g:  0.600, coef_a:  2.300, coef_b:  3.000
+cnt_ok:  0.890
+cnt_ne_uspel:  0.090
+cnt_ploho:  0.020
+{'ok': 0.89, 'ne uspel': 0.09, 'ploho': 0.02}
+
+
+coef_g:  0.600, coef_a:  2.300, coef_b:  3.500
+cnt_ok:  0.870
+cnt_ne_uspel:  0.100
+cnt_ploho:  0.030
+{'ok': 0.87, 'ne uspel': 0.1, 'ploho': 0.03}
+
+
+coef_g:  0.700, coef_a:  1.500, coef_b:  2.000
+cnt_ok:  0.930
+cnt_ne_uspel:  0.020
+cnt_ploho:  0.050
+{'ok': 0.93, 'ne uspel': 0.02, 'ploho': 0.05}
+
+
+coef_g:  0.700, coef_a:  1.500, coef_b:  2.500
+cnt_ok:  0.900
+cnt_ne_uspel:  0.060
+cnt_ploho:  0.040
+{'ok': 0.9, 'ne uspel': 0.06, 'ploho': 0.04}
+
+
+coef_g:  0.700, coef_a:  1.500, coef_b:  3.000
+cnt_ok:  0.900
+cnt_ne_uspel:  0.090
+cnt_ploho:  0.010
+{'ok': 0.9, 'ne uspel': 0.09, 'ploho': 0.01}
+
+
+coef_g:  0.700, coef_a:  1.500, coef_b:  3.500
+cnt_ok:  0.850
+cnt_ne_uspel:  0.090
+cnt_ploho:  0.060
+{'ok': 0.85, 'ne uspel': 0.09, 'ploho': 0.06}
+
+
+coef_g:  0.700, coef_a:  1.700, coef_b:  2.000
+cnt_ok:  0.890
+cnt_ne_uspel:  0.080
+cnt_ploho:  0.030
+{'ok': 0.89, 'ne uspel': 0.08, 'ploho': 0.03}
+
+
+coef_g:  0.700, coef_a:  1.700, coef_b:  2.500
+cnt_ok:  0.840
+cnt_ne_uspel:  0.120
+cnt_ploho:  0.040
+{'ok': 0.84, 'ne uspel': 0.12, 'ploho': 0.04}
+
+
+coef_g:  0.700, coef_a:  1.700, coef_b:  3.000
+cnt_ok:  0.910
+cnt_ne_uspel:  0.040
+cnt_ploho:  0.050
+{'ok': 0.91, 'ne uspel': 0.04, 'ploho': 0.05}
+
+
+coef_g:  0.700, coef_a:  1.700, coef_b:  3.500
+cnt_ok:  0.870
+cnt_ne_uspel:  0.090
+cnt_ploho:  0.040
+{'ok': 0.87, 'ne uspel': 0.09, 'ploho': 0.04}
+
+
+coef_g:  0.700, coef_a:  1.900, coef_b:  2.000
+cnt_ok:  0.900
+cnt_ne_uspel:  0.040
+cnt_ploho:  0.060
+{'ok': 0.9, 'ne uspel': 0.04, 'ploho': 0.06}
+
+
+coef_g:  0.700, coef_a:  1.900, coef_b:  2.500
+cnt_ok:  0.910
+cnt_ne_uspel:  0.060
+cnt_ploho:  0.030
+{'ok': 0.91, 'ne uspel': 0.06, 'ploho': 0.03}
+
+
+coef_g:  0.700, coef_a:  1.900, coef_b:  3.000
+cnt_ok:  0.900
+cnt_ne_uspel:  0.060
+cnt_ploho:  0.040
+{'ok': 0.9, 'ne uspel': 0.06, 'ploho': 0.04}
+
+
+coef_g:  0.700, coef_a:  1.900, coef_b:  3.500
+cnt_ok:  0.850
+cnt_ne_uspel:  0.110
+cnt_ploho:  0.040
+{'ok': 0.85, 'ne uspel': 0.11, 'ploho': 0.04}
+
+
+coef_g:  0.700, coef_a:  2.100, coef_b:  2.000
+cnt_ok:  0.850
+cnt_ne_uspel:  0.100
+cnt_ploho:  0.050
+{'ok': 0.85, 'ne uspel': 0.1, 'ploho': 0.05}
+
+
+coef_g:  0.700, coef_a:  2.100, coef_b:  2.500
+cnt_ok:  0.920
+cnt_ne_uspel:  0.030
+cnt_ploho:  0.050
+{'ok': 0.92, 'ne uspel': 0.03, 'ploho': 0.05}
+
+
+coef_g:  0.700, coef_a:  2.100, coef_b:  3.000
+cnt_ok:  0.860
+cnt_ne_uspel:  0.100
+cnt_ploho:  0.040
+{'ok': 0.86, 'ne uspel': 0.1, 'ploho': 0.04}
+
+
+coef_g:  0.700, coef_a:  2.100, coef_b:  3.500
+cnt_ok:  0.900
+cnt_ne_uspel:  0.070
+cnt_ploho:  0.030
+{'ok': 0.9, 'ne uspel': 0.07, 'ploho': 0.03}
+
+
+coef_g:  0.700, coef_a:  2.300, coef_b:  2.000
+cnt_ok:  0.950
+cnt_ne_uspel:  0.040
+cnt_ploho:  0.010
+{'ok': 0.95, 'ne uspel': 0.04, 'ploho': 0.01}
+
+
+coef_g:  0.700, coef_a:  2.300, coef_b:  2.500
+cnt_ok:  0.910
+cnt_ne_uspel:  0.070
+cnt_ploho:  0.020
+{'ok': 0.91, 'ne uspel': 0.07, 'ploho': 0.02}
+
+
+coef_g:  0.700, coef_a:  2.300, coef_b:  3.000
+cnt_ok:  0.910
+cnt_ne_uspel:  0.080
+cnt_ploho:  0.010
+{'ok': 0.91, 'ne uspel': 0.08, 'ploho': 0.01}
+
+
+coef_g:  0.700, coef_a:  2.300, coef_b:  3.500
+cnt_ok:  0.900
+cnt_ne_uspel:  0.090
+cnt_ploho:  0.010
+{'ok': 0.9, 'ne uspel': 0.09, 'ploho': 0.01}
+
+
+coef_g:  0.800, coef_a:  1.500, coef_b:  2.000
+cnt_ok:  0.960
+cnt_ne_uspel:  0.030
+cnt_ploho:  0.010
+{'ok': 0.96, 'ne uspel': 0.03, 'ploho': 0.01}
+
+
+coef_g:  0.800, coef_a:  1.500, coef_b:  2.500
+cnt_ok:  0.900
+cnt_ne_uspel:  0.080
+cnt_ploho:  0.020
+{'ok': 0.9, 'ne uspel': 0.08, 'ploho': 0.02}
+
+
+coef_g:  0.800, coef_a:  1.500, coef_b:  3.000
+cnt_ok:  0.870
+cnt_ne_uspel:  0.090
+cnt_ploho:  0.040
+{'ok': 0.87, 'ne uspel': 0.09, 'ploho': 0.04}
+
+
+coef_g:  0.800, coef_a:  1.500, coef_b:  3.500
+cnt_ok:  0.880
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.070
+{'ok': 0.88, 'ne uspel': 0.05, 'ploho': 0.07}
+
+
+coef_g:  0.800, coef_a:  1.700, coef_b:  2.000
+cnt_ok:  0.950
+cnt_ne_uspel:  0.020
+cnt_ploho:  0.030
+{'ok': 0.95, 'ne uspel': 0.02, 'ploho': 0.03}
+
+
+coef_g:  0.800, coef_a:  1.700, coef_b:  2.500
+cnt_ok:  0.950
+cnt_ne_uspel:  0.040
+cnt_ploho:  0.010
+{'ok': 0.95, 'ne uspel': 0.04, 'ploho': 0.01}
+
+
+coef_g:  0.800, coef_a:  1.700, coef_b:  3.000
+cnt_ok:  0.950
+cnt_ne_uspel:  0.030
+cnt_ploho:  0.020
+{'ok': 0.95, 'ne uspel': 0.03, 'ploho': 0.02}
+
+
+coef_g:  0.800, coef_a:  1.700, coef_b:  3.500
+cnt_ok:  0.880
+cnt_ne_uspel:  0.070
+cnt_ploho:  0.050
+{'ok': 0.88, 'ne uspel': 0.07, 'ploho': 0.05}
+
+
+coef_g:  0.800, coef_a:  1.900, coef_b:  2.000
+cnt_ok:  0.940
+cnt_ne_uspel:  0.010
+cnt_ploho:  0.050
+{'ok': 0.94, 'ne uspel': 0.01, 'ploho': 0.05}
+
+
+coef_g:  0.800, coef_a:  1.900, coef_b:  2.500
+cnt_ok:  0.880
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.070
+{'ok': 0.88, 'ne uspel': 0.05, 'ploho': 0.07}
+
+
+coef_g:  0.800, coef_a:  1.900, coef_b:  3.000
+cnt_ok:  0.890
+cnt_ne_uspel:  0.090
+cnt_ploho:  0.020
+{'ok': 0.89, 'ne uspel': 0.09, 'ploho': 0.02}
+
+
+coef_g:  0.800, coef_a:  1.900, coef_b:  3.500
+cnt_ok:  0.950
+cnt_ne_uspel:  0.040
+cnt_ploho:  0.010
+{'ok': 0.95, 'ne uspel': 0.04, 'ploho': 0.01}
+
+
+coef_g:  0.800, coef_a:  2.100, coef_b:  2.000
+cnt_ok:  0.850
+cnt_ne_uspel:  0.090
+cnt_ploho:  0.060
+{'ok': 0.85, 'ne uspel': 0.09, 'ploho': 0.06}
+
+
+coef_g:  0.800, coef_a:  2.100, coef_b:  2.500
+cnt_ok:  0.880
+cnt_ne_uspel:  0.090
+cnt_ploho:  0.030
+{'ok': 0.88, 'ne uspel': 0.09, 'ploho': 0.03}
+
+
+coef_g:  0.800, coef_a:  2.100, coef_b:  3.000
+cnt_ok:  0.960
+cnt_ne_uspel:  0.030
+cnt_ploho:  0.010
+{'ok': 0.96, 'ne uspel': 0.03, 'ploho': 0.01}
+
+
+coef_g:  0.800, coef_a:  2.100, coef_b:  3.500
+cnt_ok:  0.920
+cnt_ne_uspel:  0.060
+cnt_ploho:  0.020
+{'ok': 0.92, 'ne uspel': 0.06, 'ploho': 0.02}
+
+
+coef_g:  0.800, coef_a:  2.300, coef_b:  2.000
+cnt_ok:  0.850
+cnt_ne_uspel:  0.100
+cnt_ploho:  0.050
+{'ok': 0.85, 'ne uspel': 0.1, 'ploho': 0.05}
+
+
+coef_g:  0.800, coef_a:  2.300, coef_b:  2.500
+cnt_ok:  0.880
+cnt_ne_uspel:  0.080
+cnt_ploho:  0.040
+{'ok': 0.88, 'ne uspel': 0.08, 'ploho': 0.04}
+
+
+coef_g:  0.800, coef_a:  2.300, coef_b:  3.000
+cnt_ok:  0.870
+cnt_ne_uspel:  0.080
+cnt_ploho:  0.050
+{'ok': 0.87, 'ne uspel': 0.08, 'ploho': 0.05}
+
+
+coef_g:  0.800, coef_a:  2.300, coef_b:  3.500
+cnt_ok:  0.920
+cnt_ne_uspel:  0.060
+cnt_ploho:  0.020
+{'ok': 0.92, 'ne uspel': 0.06, 'ploho': 0.02}
+
+
+coef_g:  0.900, coef_a:  1.500, coef_b:  2.000
+cnt_ok:  0.870
+cnt_ne_uspel:  0.070
+cnt_ploho:  0.060
+{'ok': 0.87, 'ne uspel': 0.07, 'ploho': 0.06}
+
+
+coef_g:  0.900, coef_a:  1.500, coef_b:  2.500
+cnt_ok:  0.860
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.090
+{'ok': 0.86, 'ne uspel': 0.05, 'ploho': 0.09}
+
+
+coef_g:  0.900, coef_a:  1.500, coef_b:  3.000
+cnt_ok:  0.910
+cnt_ne_uspel:  0.040
+cnt_ploho:  0.050
+{'ok': 0.91, 'ne uspel': 0.04, 'ploho': 0.05}
+
+
+coef_g:  0.900, coef_a:  1.500, coef_b:  3.500
+cnt_ok:  0.920
+cnt_ne_uspel:  0.070
+cnt_ploho:  0.010
+{'ok': 0.92, 'ne uspel': 0.07, 'ploho': 0.01}
+
+
+coef_g:  0.900, coef_a:  1.700, coef_b:  2.000
+cnt_ok:  0.920
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.030
+{'ok': 0.92, 'ne uspel': 0.05, 'ploho': 0.03}
+
+
+coef_g:  0.900, coef_a:  1.700, coef_b:  2.500
+cnt_ok:  0.890
+cnt_ne_uspel:  0.080
+cnt_ploho:  0.030
+{'ok': 0.89, 'ne uspel': 0.08, 'ploho': 0.03}
+
+
+coef_g:  0.900, coef_a:  1.700, coef_b:  3.000
+cnt_ok:  0.940
+cnt_ne_uspel:  0.040
+cnt_ploho:  0.020
+{'ok': 0.94, 'ne uspel': 0.04, 'ploho': 0.02}
+
+
+coef_g:  0.900, coef_a:  1.700, coef_b:  3.500
+cnt_ok:  0.900
+cnt_ne_uspel:  0.060
+cnt_ploho:  0.040
+{'ok': 0.9, 'ne uspel': 0.06, 'ploho': 0.04}
+
+
+coef_g:  0.900, coef_a:  1.900, coef_b:  2.000
+cnt_ok:  0.950
+cnt_ne_uspel:  0.020
+cnt_ploho:  0.030
+{'ok': 0.95, 'ne uspel': 0.02, 'ploho': 0.03}
+
+
+coef_g:  0.900, coef_a:  1.900, coef_b:  2.500
+cnt_ok:  0.910
+cnt_ne_uspel:  0.060
+cnt_ploho:  0.030
+{'ok': 0.91, 'ne uspel': 0.06, 'ploho': 0.03}
+
+
+coef_g:  0.900, coef_a:  1.900, coef_b:  3.000
+cnt_ok:  0.850
+cnt_ne_uspel:  0.070
+cnt_ploho:  0.080
+{'ok': 0.85, 'ne uspel': 0.07, 'ploho': 0.08}
+
+
+coef_g:  0.900, coef_a:  1.900, coef_b:  3.500
+cnt_ok:  0.860
+cnt_ne_uspel:  0.080
+cnt_ploho:  0.060
+{'ok': 0.86, 'ne uspel': 0.08, 'ploho': 0.06}
+
+
+coef_g:  0.900, coef_a:  2.100, coef_b:  2.000
+cnt_ok:  0.880
+cnt_ne_uspel:  0.090
+cnt_ploho:  0.030
+{'ok': 0.88, 'ne uspel': 0.09, 'ploho': 0.03}
+
+
+coef_g:  0.900, coef_a:  2.100, coef_b:  2.500
+cnt_ok:  0.900
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.050
+{'ok': 0.9, 'ne uspel': 0.05, 'ploho': 0.05}
+
+
+coef_g:  0.900, coef_a:  2.100, coef_b:  3.000
+cnt_ok:  0.920
+cnt_ne_uspel:  0.060
+cnt_ploho:  0.020
+{'ok': 0.92, 'ne uspel': 0.06, 'ploho': 0.02}
+
+
+coef_g:  0.900, coef_a:  2.100, coef_b:  3.500
+cnt_ok:  0.880
+cnt_ne_uspel:  0.080
+cnt_ploho:  0.040
+{'ok': 0.88, 'ne uspel': 0.08, 'ploho': 0.04}
+
+
+coef_g:  0.900, coef_a:  2.300, coef_b:  2.000
+cnt_ok:  0.910
+cnt_ne_uspel:  0.060
+cnt_ploho:  0.030
+{'ok': 0.91, 'ne uspel': 0.06, 'ploho': 0.03}
+
+
+coef_g:  0.900, coef_a:  2.300, coef_b:  2.500
+cnt_ok:  0.910
+cnt_ne_uspel:  0.070
+cnt_ploho:  0.020
+{'ok': 0.91, 'ne uspel': 0.07, 'ploho': 0.02}
+
+
+coef_g:  0.900, coef_a:  2.300, coef_b:  3.000
+cnt_ok:  0.900
+cnt_ne_uspel:  0.060
+cnt_ploho:  0.040
+{'ok': 0.9, 'ne uspel': 0.06, 'ploho': 0.04}
+
+
+coef_g:  0.900, coef_a:  2.300, coef_b:  3.500
+cnt_ok:  0.890
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.060
+{'ok': 0.89, 'ne uspel': 0.05, 'ploho': 0.06}
+
+
+coef_g:  1.000, coef_a:  1.500, coef_b:  2.000
+cnt_ok:  0.940
+cnt_ne_uspel:  0.020
+cnt_ploho:  0.040
+{'ok': 0.94, 'ne uspel': 0.02, 'ploho': 0.04}
+
+
+coef_g:  1.000, coef_a:  1.500, coef_b:  2.500
+cnt_ok:  0.910
+cnt_ne_uspel:  0.020
+cnt_ploho:  0.070
+{'ok': 0.91, 'ne uspel': 0.02, 'ploho': 0.07}
+
+
+coef_g:  1.000, coef_a:  1.500, coef_b:  3.000
+cnt_ok:  0.890
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.060
+{'ok': 0.89, 'ne uspel': 0.05, 'ploho': 0.06}
+
+
+coef_g:  1.000, coef_a:  1.500, coef_b:  3.500
+cnt_ok:  0.880
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.070
+{'ok': 0.88, 'ne uspel': 0.05, 'ploho': 0.07}
+
+
+coef_g:  1.000, coef_a:  1.700, coef_b:  2.000
+cnt_ok:  0.930
+cnt_ne_uspel:  0.040
+cnt_ploho:  0.030
+{'ok': 0.93, 'ne uspel': 0.04, 'ploho': 0.03}
+
+
+coef_g:  1.000, coef_a:  1.700, coef_b:  2.500
+cnt_ok:  0.960
+cnt_ne_uspel:  0.020
+cnt_ploho:  0.020
+{'ok': 0.96, 'ne uspel': 0.02, 'ploho': 0.02}
+
+
+coef_g:  1.000, coef_a:  1.700, coef_b:  3.000
+cnt_ok:  0.950
+cnt_ne_uspel:  0.030
+cnt_ploho:  0.020
+{'ok': 0.95, 'ne uspel': 0.03, 'ploho': 0.02}
+
+
+coef_g:  1.000, coef_a:  1.700, coef_b:  3.500
+cnt_ok:  0.910
+cnt_ne_uspel:  0.040
+cnt_ploho:  0.050
+{'ok': 0.91, 'ne uspel': 0.04, 'ploho': 0.05}
+
+
+coef_g:  1.000, coef_a:  1.900, coef_b:  2.000
+cnt_ok:  0.880
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.070
+{'ok': 0.88, 'ne uspel': 0.05, 'ploho': 0.07}
+
+
+coef_g:  1.000, coef_a:  1.900, coef_b:  2.500
+cnt_ok:  0.920
+cnt_ne_uspel:  0.060
+cnt_ploho:  0.020
+{'ok': 0.92, 'ne uspel': 0.06, 'ploho': 0.02}
+
+
+coef_g:  1.000, coef_a:  1.900, coef_b:  3.000
+cnt_ok:  0.900
+cnt_ne_uspel:  0.070
+cnt_ploho:  0.030
+{'ok': 0.9, 'ne uspel': 0.07, 'ploho': 0.03}
+
+
+coef_g:  1.000, coef_a:  1.900, coef_b:  3.500
+cnt_ok:  0.920
+cnt_ne_uspel:  0.070
+cnt_ploho:  0.010
+{'ok': 0.92, 'ne uspel': 0.07, 'ploho': 0.01}
+
+
+coef_g:  1.000, coef_a:  2.100, coef_b:  2.000
+cnt_ok:  0.930
+cnt_ne_uspel:  0.040
+cnt_ploho:  0.030
+{'ok': 0.93, 'ne uspel': 0.04, 'ploho': 0.03}
+
+
+coef_g:  1.000, coef_a:  2.100, coef_b:  2.500
+cnt_ok:  0.940
+cnt_ne_uspel:  0.060
+cnt_ploho:  0.000
+{'ok': 0.94, 'ne uspel': 0.06, 'ploho': 0.0}
+
+
+coef_g:  1.000, coef_a:  2.100, coef_b:  3.000
+cnt_ok:  0.910
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.040
+{'ok': 0.91, 'ne uspel': 0.05, 'ploho': 0.04}
+
+
+coef_g:  1.000, coef_a:  2.100, coef_b:  3.500
+cnt_ok:  0.960
+cnt_ne_uspel:  0.020
+cnt_ploho:  0.020
+{'ok': 0.96, 'ne uspel': 0.02, 'ploho': 0.02}
+
+
+coef_g:  1.000, coef_a:  2.300, coef_b:  2.000
+cnt_ok:  0.920
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.030
+{'ok': 0.92, 'ne uspel': 0.05, 'ploho': 0.03}
+
+
+coef_g:  1.000, coef_a:  2.300, coef_b:  2.500
+cnt_ok:  0.940
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.010
+{'ok': 0.94, 'ne uspel': 0.05, 'ploho': 0.01}
+
+
+coef_g:  1.000, coef_a:  2.300, coef_b:  3.000
+cnt_ok:  0.910
+cnt_ne_uspel:  0.080
+cnt_ploho:  0.010
+{'ok': 0.91, 'ne uspel': 0.08, 'ploho': 0.01}
+
+
+coef_g:  1.000, coef_a:  2.300, coef_b:  3.500
+cnt_ok:  0.920
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.030
+{'ok': 0.92, 'ne uspel': 0.05, 'ploho': 0.03}
+
+
+coef_g:  1.100, coef_a:  1.500, coef_b:  2.000
+cnt_ok:  0.940
+cnt_ne_uspel:  0.030
+cnt_ploho:  0.030
+{'ok': 0.94, 'ne uspel': 0.03, 'ploho': 0.03}
+
+
+coef_g:  1.100, coef_a:  1.500, coef_b:  2.500
+cnt_ok:  0.910
+cnt_ne_uspel:  0.020
+cnt_ploho:  0.070
+{'ok': 0.91, 'ne uspel': 0.02, 'ploho': 0.07}
+
+
+coef_g:  1.100, coef_a:  1.500, coef_b:  3.000
+cnt_ok:  0.910
+cnt_ne_uspel:  0.040
+cnt_ploho:  0.050
+{'ok': 0.91, 'ne uspel': 0.04, 'ploho': 0.05}
+
+
+coef_g:  1.100, coef_a:  1.500, coef_b:  3.500
+cnt_ok:  0.890
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.060
+{'ok': 0.89, 'ne uspel': 0.05, 'ploho': 0.06}
+
+
+coef_g:  1.100, coef_a:  1.700, coef_b:  2.000
+cnt_ok:  0.940
+cnt_ne_uspel:  0.030
+cnt_ploho:  0.030
+{'ok': 0.94, 'ne uspel': 0.03, 'ploho': 0.03}
+
+
+coef_g:  1.100, coef_a:  1.700, coef_b:  2.500
+cnt_ok:  0.910
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.040
+{'ok': 0.91, 'ne uspel': 0.05, 'ploho': 0.04}
+
+
+coef_g:  1.100, coef_a:  1.700, coef_b:  3.000
+cnt_ok:  0.950
+cnt_ne_uspel:  0.040
+cnt_ploho:  0.010
+{'ok': 0.95, 'ne uspel': 0.04, 'ploho': 0.01}
+
+
+coef_g:  1.100, coef_a:  1.700, coef_b:  3.500
+cnt_ok:  0.920
+cnt_ne_uspel:  0.070
+cnt_ploho:  0.010
+{'ok': 0.92, 'ne uspel': 0.07, 'ploho': 0.01}
+
+
+coef_g:  1.100, coef_a:  1.900, coef_b:  2.000
+cnt_ok:  0.910
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.040
+{'ok': 0.91, 'ne uspel': 0.05, 'ploho': 0.04}
+
+
+coef_g:  1.100, coef_a:  1.900, coef_b:  2.500
+cnt_ok:  0.890
+cnt_ne_uspel:  0.050
+cnt_ploho:  0.060
+{'ok': 0.89, 'ne uspel': 0.05, 'ploho': 0.06}
+
+
+coef_g:  1.100, coef_a:  1.900, coef_b:  3.000
+cnt_ok:  0.910
+cnt_ne_uspel:  0.060
+cnt_ploho:  0.030
+{'ok': 0.91, 'ne uspel': 0.06, 'ploho': 0.03}
+
+
+coef_g:  1.100, coef_a:  1.900, coef_b:  3.500
+cnt_ok:  0.930
+cnt_ne_uspel:  0.040
+cnt_ploho:  0.030
+{'ok': 0.93, 'ne uspel': 0.04, 'ploho': 0.03}
+
+
+coef_g:  1.100, coef_a:  2.100, coef_b:  2.000
+cnt_ok:  0.920
+cnt_ne_uspel:  0.060
+cnt_ploho:  0.020
+{'ok': 0.92, 'ne uspel': 0.06, 'ploho': 0.02}
+
+
+coef_g:  1.100, coef_a:  2.100, coef_b:  2.500
+cnt_ok:  0.950
+cnt_ne_uspel:  0.010
+cnt_ploho:  0.040
+{'ok': 0.95, 'ne uspel': 0.01, 'ploho': 0.04}
+
+
+coef_g:  1.100, coef_a:  2.100, coef_b:  3.000
+cnt_ok:  0.900
+cnt_ne_uspel:  0.070
+cnt_ploho:  0.030
+{'ok': 0.9, 'ne uspel': 0.07, 'ploho': 0.03}
+
+
+coef_g:  1.100, coef_a:  2.100, coef_b:  3.500
+cnt_ok:  0.900
+cnt_ne_uspel:  0.070
+cnt_ploho:  0.030
+{'ok': 0.9, 'ne uspel': 0.07, 'ploho': 0.03}
+
+
+coef_g:  1.100, coef_a:  2.300, coef_b:  2.000
+cnt_ok:  0.920
+cnt_ne_uspel:  0.030
+cnt_ploho:  0.050
+{'ok': 0.92, 'ne uspel': 0.03, 'ploho': 0.05}
+
+
+coef_g:  1.100, coef_a:  2.300, coef_b:  2.500
+cnt_ok:  0.900
+cnt_ne_uspel:  0.060
+cnt_ploho:  0.040
+{'ok': 0.9, 'ne uspel': 0.06, 'ploho': 0.04}
+
+
+coef_g:  1.100, coef_a:  2.300, coef_b:  3.000
+cnt_ok:  0.900
+cnt_ne_uspel:  0.070
+cnt_ploho:  0.030
+{'ok': 0.9, 'ne uspel': 0.07, 'ploho': 0.03}
+
+
+coef_g:  1.100, coef_a:  2.300, coef_b:  3.500
+cnt_ok:  0.870
+cnt_ne_uspel:  0.100
+cnt_ploho:  0.030
+{'ok': 0.87, 'ne uspel': 0.1, 'ploho': 0.03}

@@ -195,7 +195,7 @@ class sfm_controller():
         robot_vel = numpy.array([self.current_velocity_twist.linear.x, self.current_velocity_twist.linear.y, 0], numpy.dtype("float64"))
         robot_vel_norm = numpy.linalg.norm(robot_vel, ord=2)
         time_const = self.relaxation_time / self.inertia.m
-        goal_force = self.inertia.m / time_const * (goal_dist_unit * self.max_linear_vel - robot_vel)
+        goal_force = 2* self.inertia.m / time_const * (goal_dist_unit * self.max_linear_vel - robot_vel)
         print("desired force:", goal_force)
         return goal_force
         

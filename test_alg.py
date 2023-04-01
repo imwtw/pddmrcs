@@ -243,7 +243,7 @@ def look_for_optimal():
 
 
 def main():
-    look_for_optimal()
+    # look_for_optimal()
     # -> coef_g:  1.100, coef_a:  2.000, coef_b:  3.500
     # -> coef_g:  0.800, coef_a:  2.000, coef_b:  2.500
 

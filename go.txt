@@ -7,6 +7,10 @@ simulator:
 _________________
 source workspace/pedsim/devel/setup.bash
 roslaunch pedsim_simulator simple_pedestrians.launch
+_________________ or
+source ws/pedsim/devel/setup.bash
+roslaunch pedsim_simulator simple_pedestrians.launch
+_________________
 
 
 _________________
@@ -14,6 +18,10 @@ server:
 _________________
 source workspace/pedsim/devel/setup.bash
 python3 workspace/pddmrcs/control_server.py
+_________________ or
+source ws/pedsim/devel/setup.bash
+python3 ws/pddmrcs/control_server.py
+_________________
 
 
 _________________
@@ -21,4 +29,7 @@ client:
 _________________
 source workspace/pedsim/devel/setup.bash
 python3 workspace/pddmrcs/control_sender.py
+_________________ or
+source ws/pedsim/devel/setup.bash
+python3 ws/pddmrcs/control_sender.py
 _________________

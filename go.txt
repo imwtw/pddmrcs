@@ -1,7 +1,24 @@
+no need:
 # export PYTHONPATH=$PYTHONPATH:/home/wtw-ub/workspace/cardif/melodic/devel/lib/python2.7/dist-packages
 
+
+_________________
+simulator:
+_________________
+source workspace/pedsim/devel/setup.bash
+roslaunch pedsim_simulator simple_pedestrians.launch
+
+
+_________________
+server:
+_________________
 source workspace/pedsim/devel/setup.bash
 python3 workspace/pddmrcs/control_server.py
 
-# python3 workspace/pddmrcs/control_sender.py
 
+_________________
+client:
+_________________
+source workspace/pedsim/devel/setup.bash
+python3 workspace/pddmrcs/control_sender.py
+_________________

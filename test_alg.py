@@ -8,14 +8,14 @@ from random import randint as ri
 
 PICTURE_PATH = '/Users/wtw/Desktop/pddmrcs/test_results/'
 # PICTURE_PATH = /home/wtw-ub/workspace/pddmrcs/test_results/
-RATE = 10
-PLOT_PERIOD_TICKS = 200
-TIME = 20
+RATE = 100
+PLOT_PERIOD_TICKS = 100
+TIME = 60
 MIN_DIST = .5
 MAX_VEL = .5
 EPS = 1e-3
 
-def goal_force_test(robot_pose, robot_vel, goal_pose, *, coef_g = 1):
+def goal_force_test(robot_pose, robot_vel, goal_pose, iteration = 0, *, coef_g = 1):
     max_linear_vel = MAX_VEL
     goal_dist_x = goal_pose[0] - robot_pose[0]
     goal_dist_y = goal_pose[1] - robot_pose[1]
@@ -25,6 +25,9 @@ def goal_force_test(robot_pose, robot_vel, goal_pose, *, coef_g = 1):
     if goal_dist_norm:
         goal_dist_unit = goal_dist / goal_dist_norm
     goal_force = coef_g * (goal_dist_unit * max_linear_vel - robot_vel)
+    if (not iteration%PLOT_PERIOD_TICKS) and (iteration >= (0*RATE)):
+        # plot_it(robot_pose, goal_force, color='green', arrow=True)
+        pass
     # print(f'goal force: {goal_force[0]: 3.3f} {goal_force[1]: 3.3f}')
     return goal_force
 
@@ -40,38 +43,47 @@ def social_force_test(robot_pose, robot_vel, agent_vel, agent_pose, iteration = 
     agent_to_robot_vel = numpy.array([agent_to_robot_vel_x, agent_to_robot_vel_y, 0], numpy.dtype("float64"))
     agent_to_robot_vel_norm = numpy.linalg.norm(agent_to_robot_vel, ord=2)
     if agent_to_robot_vel_norm < EPS:
-        # print('chasing?')
+        # plot_it(robot_pose, [0,0], color='red', aster=True)
         return numpy.array([0,0,0], numpy.dtype('float64'))
     agent_to_robot_vel_angle_cos = numpy.dot(actual_dist, agent_to_robot_vel) / (actual_dist_norm * agent_to_robot_vel_norm)
     if agent_to_robot_vel_angle_cos < 0: 
-        # print('not even close?')
+        # plot_it(robot_pose, [0,0], color='red', aster=True)
         return numpy.array([0,0,0], numpy.dtype('float64'))
     agent_to_robot_vel_unit = agent_to_robot_vel / agent_to_robot_vel_norm
     agent_to_robot_dist = actual_dist_norm * agent_to_robot_vel_angle_cos * agent_to_robot_vel_unit
     collision_dist = actual_dist - agent_to_robot_dist
     collision_dist_norm = numpy.linalg.norm(collision_dist, ord=2)
-    if collision_dist_norm < EPS: 
-        collision_dist = EPS * numpy.cross(robot_vel/robot_vel_norm, 
-                                            numpy.array([0,0,1],numpy.dtype('float64')))
+    if collision_dist_norm < EPS:
+        collision_dist = (  EPS * 
+                            numpy.cross(  robot_vel/robot_vel_norm, 
+                                        numpy.array([0,0,1],numpy.dtype('float64'))) *
+                            (-1)**(numpy.dot(agent_vel, robot_vel) > 0)
+                            )
         collision_dist_norm = EPS
     agent_to_robot_dist_norm = numpy.linalg.norm(agent_to_robot_dist, ord=2)
     social_force = coef_a * agent_to_robot_dist_norm * math.exp( - collision_dist_norm / coef_b) * (collision_dist / collision_dist_norm)
+    if (numpy.dot(agent_vel, robot_vel) > 0) and (numpy.dot(agent_vel, social_force) > 0):
+        social_force *= -1
     if (not iteration%PLOT_PERIOD_TICKS) and (iteration >= (0*RATE)):
-        # plot_it(agent_pose, agent_to_robot_dist, color='purple')
-        # plot_it(robot_pose, -collision_dist, color='orange')
+        # plot_it(agent_pose, [0,agent_to_robot_vel_angle_cos], color='green')
+        plot_it(agent_pose, agent_to_robot_dist, color='purple')
+        plot_it(robot_pose, -collision_dist, color='orange')
         plot_it(robot_pose, [social_force[0],social_force[1]], color='red', arrow=True)
         pass
     # print(f'social force: {social_force[0]: 3.3f} {social_force[1]: 3.3f}')
     return social_force
 
-def plot_it(origin, thing, *, color = 'purple', arrow=False):
+def plot_it(origin, thing, *, color = 'purple', arrow=False, aster=False):
     plt.plot([origin[0], origin[0] + thing[0]], [origin[1], origin[1]+thing[1]], color=color)
     if arrow:
-        angle = math.atan(thing[1]/thing[0])-math.pi/2
+        if abs(thing[0])>EPS: 
+            angle = math.atan(thing[1]/thing[0])-math.pi/2
+        else: angle = math.pi/2 *(1 + (-1)**(thing[1]>0))
         if thing[0] < 0:
             angle += math.pi
         angle_deg = math.degrees(angle)
         plt.plot(origin[0] + thing[0], origin[1] + thing[1], color=color, marker=(3,0,angle_deg))
+    elif aster: plt.plot(origin[0] + thing[0], origin[1] + thing[1], color=color, marker='*')
 
 def rf(range = 3):
     return ri(-range,range-1) + ri(0,9)/10
@@ -96,12 +108,15 @@ def test_situation(*,
     array_agent_x = []
     array_agent_y = []
     social_force = numpy.array([0, 0, 0], numpy.dtype("float64"))
+    if _print:
+        plot_it(goal_pose, [0,0], aster=True, color = 'green')
+
     for i in range(TIME*RATE):
         array_robot_x.append(robot_pose[0])
         array_robot_y.append(robot_pose[1])
         array_agent_x.append(agent_pose[0])
         array_agent_y.append(agent_pose[1])
-        goal_force = goal_force_test(robot_pose, robot_vel, goal_pose, coef_g = coef_g)
+        goal_force = goal_force_test(robot_pose, robot_vel, goal_pose, i, coef_g = coef_g)
         social_force = social_force_test(robot_pose, robot_vel, agent_vel, agent_pose, i, coef_a=coef_a, coef_b=coef_b)
         sum_force = goal_force + social_force
         robot_vel += sum_force *dt
@@ -126,8 +141,8 @@ def test_situation(*,
         plt.clf()
         return _res
     print('\nprinting...')
-    plot_it([robot_pose[0],robot_pose[1]],[robot_vel[0]*dt,robot_vel[1]*dt], color='blue', arrow=True)
     plot_it([agent_pose[0],agent_pose[1]],[agent_vel[0]*dt,agent_vel[1]*dt], color='magenta', arrow=True)
+    plot_it([robot_pose[0],robot_pose[1]],[robot_vel[0]*dt,robot_vel[1]*dt], color='blue', arrow=True)
     plt.plot(array_robot_x[0],array_robot_y[0], marker='o', color='blue')
     plt.plot(array_robot_x, array_robot_y, color='blue')
     plt.plot(array_agent_x[0],array_agent_y[0], marker='o', color='magenta')
@@ -137,7 +152,10 @@ def test_situation(*,
     plt.ylim((-4,4))
     plt.xlabel('x')
     plt.ylabel('y')
-    plt.savefig(PICTURE_PATH + _name + _res + '.png')
+    plt.savefig(PICTURE_PATH + 
+                _name + 
+                _res + 
+                '.png')
     if _show:
         plt.show()
     plt.clf()
@@ -247,21 +265,21 @@ def main():
     # -> coef_g:  1.100, coef_a:  2.000, coef_b:  3.500
     # -> coef_g:  0.800, coef_a:  2.000, coef_b:  2.500
 
-    # rand_tests(steps = 10, _print = True,
-    #             coef_g = 1.1,
+    # rand_tests(steps = 100, _print = True,
+    #             coef_g = 2,
     #             coef_a = 2,
-    #             coef_b = 3.5)
+    #             coef_b = 2)
 
-    # res = nerand_test(      gp_x = 3, gp_y = 0,
-    #                         rp_x = -3, rp_y = 0.01,
-    #                         ap_x = -1, ap_y = 0,
-    #                         rv_x = MAX_VEL, rv_y = 0,
-    #                         av_x = MAX_VEL/10, av_y = 0,
-    #                         coef_g = 1.1,
-    #                         coef_a = 2,
-    #                         coef_b = 3.5
-    #                     )
-    # print(res)
+    res = nerand_test(      gp_x = 1, gp_y = 0,
+                            rp_x = 1, rp_y = 2,
+                            ap_x = 0, ap_y = -3,
+                            rv_x = 0, rv_y = -MAX_VEL,
+                            av_x = 0, av_y = MAX_VEL,
+                            coef_g = 2,
+                            coef_a = 2,
+                            coef_b = 2
+                        )
+    print(res)
     pass
 
 if __name__ == '__main__':

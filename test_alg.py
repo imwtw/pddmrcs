@@ -11,6 +11,7 @@ PICTURE_PATH = '/Users/wtw/Desktop/pddmrcs/test_results/'
 RATE = 100
 PLOT_PERIOD_TICKS = 100
 TIME = 60
+MAX_DIST = 5
 MIN_DIST = .5
 MAX_VEL = .5
 EPS = 1e-3
@@ -72,6 +73,24 @@ def social_force_test(robot_pose, robot_vel, agent_vel, agent_pose, iteration = 
         pass
     # print(f'social force: {social_force[0]: 3.3f} {social_force[1]: 3.3f}')
     return social_force
+
+def obstacle_force_test(robot_pose, iteration=0, *, coef_o=1, coef_c=1):
+    obstacle_force = numpy.array([0,0,0], numpy.dtype('float64'))
+    coef_o = 10
+    coef_c = .3
+    wall_1 = -2
+    wall_2 = 1
+    if iteration == 0:
+        plot_it(numpy.array([-4,wall_1,0]), numpy.array([8,0,0]), color='black')
+        plot_it(numpy.array([-4,wall_2,0]), numpy.array([8,0,0]), color='black')
+    obstacle_distance_1 = abs(robot_pose[1] - wall_1)
+    obstacle_distance_2 = abs(robot_pose[1] - wall_2)
+    obstacle_direction = coef_o * numpy.array([0,1,0], numpy.dtype('float64'))
+    obstacle_force += math.exp(-obstacle_distance_1 / coef_c) * obstacle_direction
+    obstacle_force += math.exp(-obstacle_distance_2 / coef_c) * (-obstacle_direction)
+    if (not iteration%PLOT_PERIOD_TICKS) and (iteration >= (0*RATE)):
+        plot_it(robot_pose, obstacle_force, arrow=True, color='grey')
+    return obstacle_force
 
 def plot_it(origin, thing, *, color = 'purple', arrow=False, aster=False):
     plt.plot([origin[0], origin[0] + thing[0]], [origin[1], origin[1]+thing[1]], color=color)
@@ -161,6 +180,153 @@ def test_situation(*,
     plt.clf()
     return _res
 
+def test_situation_multi(*,
+                    goal_pose = numpy.array([0, 0, 0], numpy.dtype("float64")),
+                    robot_pose = numpy.array([0, 0, 0], numpy.dtype("float64")),
+                    robot_vel = numpy.array([MAX_VEL, 0, 0], numpy.dtype("float64")),
+                    agent_vel = [numpy.array([MAX_VEL, 0, 0], numpy.dtype("float64"))],
+                    agent_pose = [numpy.array([0, 0, 0], numpy.dtype("float64"))],
+                    _show = False,
+                    _print = False,
+                    _name = 'nothing',
+                    coef_g = 1,
+                    coef_a = 1,
+                    coef_b = 1,
+                    coef_o = 1, 
+                    coef_c = 1
+                    ):
+    
+    dt = RATE**(-1)
+    _res = '_ne_uspel'
+    array_robot_x = []
+    array_robot_y = []
+    array_agent_x = []
+    array_agent_y = []
+    for j in range(len(agent_pose)):
+        array_agent_x.append([])
+        array_agent_y.append([])
+    if _print:
+        plot_it(goal_pose, [0,0], aster=True, color = 'green')
+    for i in range(TIME*RATE):
+        social_force = numpy.array([0, 0, 0], numpy.dtype("float64"))
+        array_robot_x.append(robot_pose[0])
+        array_robot_y.append(robot_pose[1])
+        for j in range(len(agent_pose)):
+            array_agent_x[j].append(agent_pose[j][0])
+            array_agent_y[j].append(agent_pose[j][1])
+            if numpy.linalg.norm(robot_pose - agent_pose[j]) < MAX_DIST:
+                social_force += social_force_test(robot_pose, robot_vel, agent_vel[j], agent_pose[j], i, coef_a=coef_a, coef_b=coef_b)
+        goal_force = goal_force_test(robot_pose, robot_vel, goal_pose, i, coef_g = coef_g)
+        obstacle_force = obstacle_force_test(robot_pose, i,  coef_o=coef_o, coef_c=coef_c)
+        sum_force = goal_force + social_force + obstacle_force
+        robot_vel += sum_force *dt
+        robot_vel_norm = numpy.linalg.norm(robot_vel)
+        if robot_vel_norm > MAX_VEL:
+            robot_vel = MAX_VEL * (robot_vel/robot_vel_norm)
+        robot_pose += robot_vel *dt
+        for j in range(len(agent_pose)):
+            agent_pose[j] += agent_vel[j] *dt
+        if (numpy.linalg.norm(robot_pose - goal_pose) < MIN_DIST/2): 
+            if _print: print(f'\nbreak on time = {i/RATE:3.3f}: goal reached')
+            _res = '_ok'
+            plot_it([robot_pose[0],robot_pose[1]],[robot_vel[0]*dt,robot_vel[1]*dt], color='blue', arrow=True)
+            for j in range(len(agent_pose)):
+                plot_it([agent_pose[j][0],agent_pose[j][1]],[agent_vel[j][0]*dt,agent_vel[j][1]*dt], color='magenta', arrow=True)
+            break
+        for j in range(len(agent_pose)):
+            if (numpy.linalg.norm(robot_pose - agent_pose[j]) < MIN_DIST): 
+                if _print: print(f'\nbreak on time = {i/RATE:3.3f}: too close')
+                _res = '_ploho'
+                plot_it([robot_pose[0],robot_pose[1]],[robot_vel[0]*dt,robot_vel[1]*dt], color='blue', arrow=True)
+                plot_it([agent_pose[j][0],agent_pose[j][1]],[agent_vel[j][0]*dt,agent_vel[j][1]*dt], color='magenta', arrow=True)
+                break
+        if _res=='_ploho': break
+                
+    if not _print:
+        plt.clf()
+        return _res
+    print('\nprinting...')
+    for j in range(len(agent_pose)):
+        plot_it([agent_pose[j][0],agent_pose[j][1]],[agent_vel[j][0]*dt,agent_vel[j][1]*dt], color='magenta', arrow=True)
+        plt.plot(array_agent_x[j][0],array_agent_y[j][0], marker='o', color='magenta')
+        plt.plot(array_agent_x[j], array_agent_y[j], color='magenta')
+    plot_it([robot_pose[0],robot_pose[1]],[robot_vel[0]*dt,robot_vel[1]*dt], color='blue', arrow=True)
+    plt.plot(array_robot_x[0],array_robot_y[0], marker='o', color='blue')
+    plt.plot(array_robot_x, array_robot_y, color='blue')
+    print('         ...done')
+    plt.xlim((-4,4))
+    plt.ylim((-4,4))
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.savefig(PICTURE_PATH + 
+                _name + 
+                _res + 
+                '.png')
+    if _show:
+        plt.show()
+    plt.clf()
+    return _res
+
+def nerand_test(*,
+                    gp_x = 0, gp_y = 0,
+                    rp_x = 0, rp_y = 0,
+                    rv_x = 0, rv_y = 0,
+                    ap_x = 0, ap_y = 0,
+                    av_x = 0, av_y = 0,
+                    coef_g,
+                    coef_a,
+                    coef_b
+                    ):
+    return test_situation(
+                        goal_pose = numpy.array([gp_x, gp_y, 0], numpy.dtype("float64")),
+                        robot_pose = numpy.array([rp_x, rp_y, 0], numpy.dtype("float64")),
+                        robot_vel = numpy.array([rv_x, rv_y, 0], numpy.dtype("float64")),
+                        agent_vel = numpy.array([av_x, av_y, 0], numpy.dtype("float64")),
+                        agent_pose = numpy.array([ap_x, ap_y, 0], numpy.dtype("float64")),
+                        _show = False,
+                        _print = True,
+                        _name = '_manual_test',
+                        coef_g = coef_g,
+                        coef_a = coef_a,
+                        coef_b = coef_b
+                            )
+
+def nerand_test_multi(*,
+                    gp_x = 0, gp_y = 0,
+                    rp_x = 0, rp_y = 0,
+                    rv_x = 0, rv_y = 0,
+                    ap1_x = 0, ap1_y = 0,
+                    av1_x = 0, av1_y = 0,
+                    ap2_x = 0, ap2_y = 0,
+                    av2_x = 0, av2_y = 0,
+                    coef_g,
+                    coef_a,
+                    coef_b,
+                    coef_o, 
+                    coef_c
+                    ):
+    return test_situation_multi(
+                        goal_pose = numpy.array([gp_x, gp_y, 0], numpy.dtype("float64")),
+                        robot_pose = numpy.array([rp_x, rp_y, 0], numpy.dtype("float64")),
+                        robot_vel = numpy.array([rv_x, rv_y, 0], numpy.dtype("float64")),
+                        agent_vel = [
+                                        numpy.array([av1_x, av1_y, 0], numpy.dtype("float64")),
+                                        numpy.array([av2_x, av2_y, 0], numpy.dtype("float64"))
+                                        ],
+                        agent_pose = [
+                                        numpy.array([ap1_x, ap1_y, 0], numpy.dtype("float64")),
+                                        numpy.array([ap2_x, ap2_y, 0], numpy.dtype("float64"))
+                                        ],
+                        _show = False,
+                        _print = True,
+                        _name = '_manual_test',
+                        coef_g = coef_g,
+                        coef_a = coef_a,
+                        coef_b = coef_b,
+                        coef_o = coef_o, 
+                        coef_c = coef_c
+                            )
+
 def rand_tests( steps = 1, *,
                 _print = False,
                 coef_g = 1,
@@ -207,30 +373,6 @@ def rand_tests( steps = 1, *,
     # print('\n')
     return {'ok': cnt_ok/steps, 'ne uspel': cnt_ne_uspel/steps, 'ploho': cnt_ploho/steps}
 
-def nerand_test(*,
-                    gp_x = 0, gp_y = 0,
-                    rp_x = 0, rp_y = 0,
-                    rv_x = 0, rv_y = 0,
-                    ap_x = 0, ap_y = 0,
-                    av_x = 0, av_y = 0,
-                    coef_g,
-                    coef_a,
-                    coef_b
-                    ):
-    return test_situation(
-                        goal_pose = numpy.array([gp_x, gp_y, 0], numpy.dtype("float64")),
-                        robot_pose = numpy.array([rp_x, rp_y, 0], numpy.dtype("float64")),
-                        robot_vel = numpy.array([rv_x, rv_y, 0], numpy.dtype("float64")),
-                        agent_vel = numpy.array([av_x, av_y, 0], numpy.dtype("float64")),
-                        agent_pose = numpy.array([ap_x, ap_y, 0], numpy.dtype("float64")),
-                        _show = False,
-                        _print = True,
-                        _name = '_manual_test',
-                        coef_g = coef_g,
-                        coef_a = coef_a,
-                        coef_b = coef_b
-                            )
-
 def check(*, steps, coef_g,coef_a,coef_b):
     print(  rand_tests( steps,
                         _print=False,
@@ -247,9 +389,9 @@ def look_for_optimal():
     
     with open(filename, 'w') as f:
         try:
-            for coef_1 in range(6,12,1):
-                for coef_2 in range(15,25,2):
-                    for coef_3 in range(20,40,5):
+            for coef_1 in range(18,22,1):
+                for coef_2 in range(15,25,1):
+                    for coef_3 in range(15,25,1):
                         print(f'testing g={coef_1/10}, a={coef_2/10}, b={coef_3/10}')
                         sys.stdout = f
                         check(steps=100, coef_g=coef_1/10, coef_a=coef_2/10, coef_b=coef_3/10)
@@ -262,24 +404,38 @@ def look_for_optimal():
 
 def main():
     # look_for_optimal()
-    # -> coef_g:  1.100, coef_a:  2.000, coef_b:  3.500
-    # -> coef_g:  0.800, coef_a:  2.000, coef_b:  2.500
+    
 
     # rand_tests(steps = 100, _print = True,
     #             coef_g = 2,
     #             coef_a = 2,
     #             coef_b = 2)
 
-    res = nerand_test(      gp_x = 1, gp_y = 0,
-                            rp_x = 1, rp_y = 2,
-                            ap_x = 0, ap_y = -3,
-                            rv_x = 0, rv_y = -MAX_VEL,
-                            av_x = 0, av_y = MAX_VEL,
+    # res = nerand_test(gp_x = 2, gp_y = -1,
+    #                     rp_x = -3, rp_y = -1,
+    #                     rv_x = MAX_VEL, rv_y = 0,
+    #                     ap_x = 3, ap_y = 0,
+    #                     av_x = -MAX_VEL/2, av_y = 0,
+    #                     coef_g = 2,
+    #                     coef_a = 2,
+    #                     coef_b = 2
+    #                     )
+
+
+    res = nerand_test_multi(gp_x = 2, gp_y = -.5,
+                            rp_x = -4, rp_y = -1,
+                            rv_x = MAX_VEL, rv_y = 0,
+                            ap1_x = 3, ap1_y = 0,
+                            av1_x = -MAX_VEL/1.4, av1_y = 0,
+                            ap2_x = -1, ap2_y = -1,
+                            av2_x = MAX_VEL/1.4, av2_y = 0,
                             coef_g = 2,
                             coef_a = 2,
-                            coef_b = 2
+                            coef_b = 2,
+                            coef_o = 10, 
+                            coef_c = .3
                         )
-    print(res)
+    # print(res)
     pass
 
 if __name__ == '__main__':

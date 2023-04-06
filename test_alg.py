@@ -10,7 +10,7 @@ from simple_pid import PID
 PICTURE_PATH = '/Users/wtw/Desktop/pddmrcs/test_results/'
 # PICTURE_PATH = /home/wtw-ub/workspace/pddmrcs/test_results/
 RATE = 100
-PLOT_PERIOD_TICKS = 20
+PLOT_PERIOD_TICKS = 10
 TIME = 60
 
 MAX_DIST = 4
@@ -18,9 +18,10 @@ MIN_DIST = .5
 MAX_VEL_0 = .5
 MAX_VEL = MAX_VEL_0
 EPS = 1e-3
+M = 10
 
 def goal_force_test(robot_pose, robot_vel, goal_pose, iteration = 0, *, coef_g = 1, mass = 1):
-    max_linear_vel = MAX_VEL
+    max_linear_vel = MAX_VEL_0
     goal_dist_x = goal_pose[0] - robot_pose[0]
     goal_dist_y = goal_pose[1] - robot_pose[1]
     goal_dist = numpy.array([goal_dist_x, goal_dist_y, 0], numpy.dtype("float64"))
@@ -41,12 +42,16 @@ def social_force_test(robot_pose, robot_vel, agent_vel, agent_pose, iteration = 
                       ):
     actual_dist = robot_pose - agent_pose
     actual_dist_norm = numpy.linalg.norm(actual_dist, ord=2)
-    global MAX_VEL
-    vel_limit = MAX_VEL_0*(.1+math.exp(-((actual_dist_norm-MIN_DIST)**-1)/MAX_DIST))
-    if actual_dist_norm < MIN_DIST:
-        MAX_VEL = .1*MAX_VEL_0
-    elif MAX_VEL > vel_limit:
-        MAX_VEL = vel_limit
+
+
+    # global MAX_VEL
+    # vel_limit = MAX_VEL_0*(.1+math.exp(-((actual_dist_norm-MIN_DIST)**-1)/MAX_DIST))
+    # if actual_dist_norm < MIN_DIST:
+    #     MAX_VEL = .1*MAX_VEL_0
+    # elif MAX_VEL > vel_limit:
+    #     MAX_VEL = vel_limit
+
+
     chasing = (numpy.dot(agent_vel, robot_vel) > 0)
     robot_vel_norm = numpy.linalg.norm(robot_vel, ord=2)
     agent_vel_norm = numpy.linalg.norm(agent_vel)
@@ -61,7 +66,7 @@ def social_force_test(robot_pose, robot_vel, agent_vel, agent_pose, iteration = 
         # plot_it(robot_pose, [0,0], color='red', aster=True)
         return numpy.array([0,0,0], numpy.dtype('float64'))
     agent_to_robot_vel_angle_cos = numpy.dot(actual_dist, agent_to_robot_vel) / (actual_dist_norm * agent_to_robot_vel_norm)
-    if agent_to_robot_vel_angle_cos < 0: 
+    if agent_to_robot_vel_angle_cos < math.cos(math.pi/4): 
         # plot_it(robot_pose, [0,0], color='red', aster=True)
         return numpy.array([0,0,0], numpy.dtype('float64'))
     agent_to_robot_vel_unit = agent_to_robot_vel / agent_to_robot_vel_norm
@@ -76,9 +81,19 @@ def social_force_test(robot_pose, robot_vel, agent_vel, agent_pose, iteration = 
                             )
         collision_dist_norm = EPS
     agent_to_robot_dist_norm = numpy.linalg.norm(agent_to_robot_dist, ord=2)
-    social_force = coef_a * agent_to_robot_dist_norm * math.exp( - collision_dist_norm / coef_b) * (collision_dist / collision_dist_norm)
+    collision_time = agent_to_robot_dist_norm/agent_to_robot_vel_norm
+
+    social_force = coef_a * (M*robot_vel_norm/(collision_time)) * math.exp( - collision_dist_norm / coef_b) * (collision_dist / collision_dist_norm)
+    # social_force = coef_a * ((MAX_DIST - agent_to_robot_dist_norm)*agent_to_robot_dist_norm) * math.exp( - collision_dist_norm / coef_b) * (collision_dist / collision_dist_norm)
+    # (MAX_DIST - agent_to_robot_dist_norm)*agent_to_robot_dist_norm
+    
+    
+    
+    
+    
     
     if chasing and (numpy.dot(agent_vel, social_force) > 0):
+        # print('sth reflected 1')
         social_force *= -1
         social_force = -social_force + 2*numpy.dot(agent_vel_unit, social_force)*agent_vel_unit
     elif not chasing and agent_vel_norm:
@@ -88,23 +103,36 @@ def social_force_test(robot_pose, robot_vel, agent_vel, agent_pose, iteration = 
         agent_vel_right_unit = (numpy.cross( agent_vel/agent_vel_norm, 
                                 numpy.array([0,0,1],numpy.dtype('float64'))) *
                                     (-1)**chasing)
-        if (numpy.linalg.norm(actual_dist-agent_vel_right_unit*EPS) > actual_dist_norm):
+        eps_dist = .1
+        if (numpy.linalg.norm(actual_dist-agent_vel_right_unit*eps_dist) > actual_dist_norm):
             social_force_norm = numpy.linalg.norm(social_force)
             agent_vel_to_force_sin = numpy.cross(agent_vel_unit, social_force)[2]/social_force_norm
             if (agent_vel_to_force_sin < 0):
+                # print('sth reflected 2')
+                social_force = -social_force + 2*numpy.dot(agent_vel_unit, social_force)*agent_vel_unit
+                pass
+        elif (numpy.linalg.norm(actual_dist+agent_vel_right_unit*eps_dist) > actual_dist_norm):
+            social_force_norm = numpy.linalg.norm(social_force)
+            agent_vel_to_force_sin = numpy.cross(agent_vel_unit, social_force)[2]/social_force_norm
+            if (agent_vel_to_force_sin > 0):
+                # print('sth reflected 3')
                 social_force = -social_force + 2*numpy.dot(agent_vel_unit, social_force)*agent_vel_unit
                 pass
 
+
+    
     if (not iteration%PLOT_PERIOD_TICKS) and (iteration >= (0*RATE)):
         # agent_vel_right_unit = (numpy.cross( agent_vel/agent_vel_norm, 
         #                         numpy.array([0,0,1],numpy.dtype('float64'))) *
         #                             (-1)**chasing)
         # plot_it(agent_pose, actual_dist, color='black', arrow=True)
         # plot_it(agent_pose, actual_dist-agent_vel_right_unit*.1, color='green', arrow=True)
-        # plot_it(agent_pose, [0,agent_to_robot_vel_angle_cos], color='green')
-        # plot_it(agent_pose, agent_to_robot_dist, color='purple')
-        # plot_it(robot_pose, -collision_dist, color='orange')
-        # plot_it(robot_pose, [social_force[0],social_force[1]], color='red', arrow=True)
+        # plot_it(agent_pose, [0,((MAX_DIST - agent_to_robot_dist_norm)*agent_to_robot_dist_norm)], color='green')
+        # plot_it(agent_pose, [0,-((collision_time))], color='grey')
+        # plot_it(robot_pose, [0,-(robot_vel_norm)], color='blue')
+        plot_it(agent_pose, agent_to_robot_dist, color='purple')
+        plot_it(robot_pose, -collision_dist, color='orange')
+        plot_it(robot_pose, [social_force[0],social_force[1]], color='red', arrow=True)
         pass
     # print(f'social force: {social_force[0]: 3.3f} {social_force[1]: 3.3f}')
     return social_force
@@ -258,12 +286,13 @@ def test_situation_multi(*,
         obstacle_force = obstacle_force_test(robot_pose, i,  coef_o=coef_o, coef_c=coef_c)
         if _print:
             if (not i%PLOT_PERIOD_TICKS):
-                if numpy.linalg.norm(goal_force):
-                    plot_it(robot_pose, goal_force, color='green', arrow=True)
-                if numpy.linalg.norm(obstacle_force):
-                    plot_it(robot_pose, obstacle_force, color='grey', arrow=True)
-                if numpy.linalg.norm(social_force):
-                    plot_it(robot_pose, [social_force[0],social_force[1]], color='red', arrow=True)
+                pass
+                # if numpy.linalg.norm(goal_force):
+                #     plot_it(robot_pose, goal_force, color='green', arrow=True)
+                # if numpy.linalg.norm(obstacle_force):
+                #     plot_it(robot_pose, obstacle_force, color='grey', arrow=True)
+                # if numpy.linalg.norm(social_force):
+                #     plot_it(robot_pose, [social_force[0],social_force[1]], color='red', arrow=True)
         sum_force = goal_force + social_force + obstacle_force
         robot_acc = sum_force/mass
         robot_vel_des = robot_vel+robot_acc*dt
@@ -466,16 +495,16 @@ def main():
     res = nerand_test_multi(gp_x = 3,           gp_y = -.5,
                             rp_x = -4,          rp_y = -.5,
                             rv_x = MAX_VEL,     rv_y = 0,
-                            ap1_x = 3,          ap1_y = 0.,
-                            av1_x = -MAX_VEL,   av1_y = 0.02,
-                            ap2_x = 1,          ap2_y = -1.,
+                            ap1_x = 0,          ap1_y = -0.5,
+                            av1_x = MAX_VEL*0,   av1_y = -0.0,
+                            ap2_x = 2,          ap2_y = -1.5,
                             av2_x = -MAX_VEL,   av2_y = 0,
-                            coef_g = .5,
+                            coef_g = 5/M,
                             coef_a = 1.5,
                             coef_b = 4.9,
                             coef_o = 5, 
                             coef_c = .3,
-                            m = 10
+                            m = M
                         )
     # print(res)
     pass

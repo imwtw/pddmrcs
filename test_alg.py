@@ -10,7 +10,7 @@ from simple_pid import PID
 PICTURE_PATH = '/Users/wtw/Desktop/pddmrcs/test_results/'
 # PICTURE_PATH = /home/wtw-ub/workspace/pddmrcs/test_results/
 RATE = 100
-PLOT_PERIOD_TICKS = 10
+PLOT_PERIOD_TICKS = 50
 TIME = 60
 
 MAX_DIST = 4
@@ -61,10 +61,14 @@ def social_force_test(robot_pose, robot_vel, agent_vel, agent_pose, iteration = 
     agent_to_robot_vel_x = agent_vel[0] - robot_vel[0]
     agent_to_robot_vel_y = agent_vel[1] - robot_vel[1]
     agent_to_robot_vel = numpy.array([agent_to_robot_vel_x, agent_to_robot_vel_y, 0], numpy.dtype("float64"))
+    
+    
     agent_to_robot_vel_norm = numpy.linalg.norm(agent_to_robot_vel, ord=2)
     if agent_to_robot_vel_norm < EPS:
         # plot_it(robot_pose, [0,0], color='red', aster=True)
         return numpy.array([0,0,0], numpy.dtype('float64'))
+
+
     agent_to_robot_vel_angle_cos = numpy.dot(actual_dist, agent_to_robot_vel) / (actual_dist_norm * agent_to_robot_vel_norm)
     if agent_to_robot_vel_angle_cos < math.cos(math.pi/4): 
         # plot_it(robot_pose, [0,0], color='red', aster=True)
@@ -73,6 +77,9 @@ def social_force_test(robot_pose, robot_vel, agent_vel, agent_pose, iteration = 
     agent_to_robot_dist = actual_dist_norm * agent_to_robot_vel_angle_cos * agent_to_robot_vel_unit
     collision_dist = actual_dist - agent_to_robot_dist
     collision_dist_norm = numpy.linalg.norm(collision_dist, ord=2)
+
+
+
     if collision_dist_norm < EPS:
         collision_dist = (  EPS * 
                             numpy.cross(  robot_vel/robot_vel_norm, 
@@ -80,15 +87,12 @@ def social_force_test(robot_pose, robot_vel, agent_vel, agent_pose, iteration = 
                                         (-1)**(chasing)
                             )
         collision_dist_norm = EPS
+
+
+
     agent_to_robot_dist_norm = numpy.linalg.norm(agent_to_robot_dist, ord=2)
     collision_time = agent_to_robot_dist_norm/agent_to_robot_vel_norm
-
     social_force = coef_a * (M*robot_vel_norm/(collision_time)) * math.exp( - collision_dist_norm / coef_b) * (collision_dist / collision_dist_norm)
-    # social_force = coef_a * ((MAX_DIST - agent_to_robot_dist_norm)*agent_to_robot_dist_norm) * math.exp( - collision_dist_norm / coef_b) * (collision_dist / collision_dist_norm)
-    # (MAX_DIST - agent_to_robot_dist_norm)*agent_to_robot_dist_norm
-    
-    
-    
     
     
     
@@ -133,6 +137,7 @@ def social_force_test(robot_pose, robot_vel, agent_vel, agent_pose, iteration = 
         plot_it(agent_pose, agent_to_robot_dist, color='purple')
         plot_it(robot_pose, -collision_dist, color='orange')
         plot_it(robot_pose, [social_force[0],social_force[1]], color='red', arrow=True)
+        # plot_it(agent_pose, actual_dist, color='orange')
         pass
     # print(f'social force: {social_force[0]: 3.3f} {social_force[1]: 3.3f}')
     return social_force
@@ -287,6 +292,9 @@ def test_situation_multi(*,
         if _print:
             if (not i%PLOT_PERIOD_TICKS):
                 pass
+                # for j in range(len(agent_pose)):
+                # for j in range(1):
+                #     plot_it(agent_pose[j], robot_pose-agent_pose[j], color='orange')
                 # if numpy.linalg.norm(goal_force):
                 #     plot_it(robot_pose, goal_force, color='green', arrow=True)
                 # if numpy.linalg.norm(obstacle_force):
@@ -492,14 +500,14 @@ def look_for_optimal():
 
 def main():
     
-    res = nerand_test_multi(gp_x = 3,           gp_y = -.5,
-                            rp_x = -4,          rp_y = -.5,
+    res = nerand_test_multi(gp_x = 3.,           gp_y = -.5,
+                            rp_x = -3.5,          rp_y = -.5,
                             rv_x = MAX_VEL,     rv_y = 0,
-                            ap1_x = 0,          ap1_y = -0.5,
-                            av1_x = MAX_VEL*0,   av1_y = -0.0,
-                            ap2_x = 2,          ap2_y = -1.5,
+                            ap1_x = 1,          ap1_y = -0.,
+                            av1_x = -MAX_VEL,   av1_y = -0.0,
+                            ap2_x = -30,          ap2_y = -1.5,
                             av2_x = -MAX_VEL,   av2_y = 0,
-                            coef_g = 5/M,
+                            coef_g = .5,
                             coef_a = 1.5,
                             coef_b = 4.9,
                             coef_o = 5, 

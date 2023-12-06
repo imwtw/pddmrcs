@@ -1,0 +1,5 @@
+// 1. waypoints to graph in sender node
+// 2. from queue to extended_queue (a*) in sender node
+3. platform dynamics model into velocity control instead of desired=actual
+// 4. lock velocity when surrounded
+5. state machine for different situations

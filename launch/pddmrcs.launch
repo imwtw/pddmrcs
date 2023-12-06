@@ -42,9 +42,9 @@
 
   <!-- Controls -->
   <node name="environment_manager_node" pkg="pddmrcs" type="environment_manager_node.py" output="screen"></node>
-  <node name="control_server_node" pkg="pddmrcs" type="control_server_node.py" output="screen"></node>
+  <!-- <node name="control_server_node" pkg="pddmrcs" type="control_server_node.py" output="screen"></node> -->
   <!-- <node name="environment_manager_node" pkg="pddmrcs" type="environment_manager_node.py" output="screen" launch-prefix="xterm -e"></node> -->
-  <!-- <node name="control_server_node" pkg="pddmrcs" type="control_server_node.py" output="screen" launch-prefix="xterm -e"></node> -->
+  <node name="control_server_node" pkg="pddmrcs" type="control_server_node.py" output="screen" launch-prefix="xterm -e"></node>
   <node name="control_sender_node" pkg="pddmrcs" type="control_sender_node.py" output="screen" launch-prefix="xterm -e"></node>
 
 </launch>

@@ -1,19 +1,48 @@
-
-
 class dc_motor:
-    def __init__(self, *, R, L, B, Kt, J, Kb, dt):
-        self.R, self.L, self.B, self. Kt, self.J, self.Kb = R, L, B, Kt, J, Kb
+    def __init__(self, *, Ra, La, K, B, J_internal, dt):
+        self.Ra = Ra               
+        self.La = La               
+        self.K = K                 
+        self.B = B                          
+        self.J_internal = J_internal        
+        self.J_external = 0
+        self.J = self.J_internal + self.J_external
         self.dt = dt
-        self.outputs = [0, 0] # outputs[1] is newest
+        self.I = 0.
+        self.T = 0.
+        self.ang_acc = 0.
+        self.ang_vel = 0.  
+        self.Tf = .14
 
-    def update(self, *, target_speed):
-        output_now = (target_speed + (self.L * self.B * self.outputs[1] / self.dt / self.Kt) + (self.L * self.J * (2 * self.outputs[1] - self.outputs[0]) / self.Kt / (self.dt ** 2))+(
-            self.R * self.J * self.outputs[1] / self.Kt)) / ((self.L * self.B / self.dt / self.Kt) + (self.L * self.J / self.Kt / (self.dt**2))+(self.R * (self.B + self.J) / self.Kt) - self.Kb)
-        self.outputs[0] = self.outputs[1]
-        self.outputs[1] = output_now
+    def update_J(self, *, J_ext):
+        self.J_external = J_ext
+        self.J = self.J_internal + self.J_external
 
-    def get_speed(self):
-        return self.outputs[1]
+    def update(self, *, voltage):
+        friction_direction = 0
+        if (self.ang_vel > 0):  
+            friction_direction = 1
+        elif (self.ang_vel < 0):
+            friction_direction = -1
+        elif (self.ang_acc > 0):
+            friction_direction = 1
+        elif (self.ang_acc < 0):
+            friction_direction = -1
+        else:
+            friction_direction = 0
 
+        dI = ((voltage - self.K * self.ang_vel - self.Ra * self.I) / self.La) * self.dt 
+        self.I = self.I + dI
+        self.T = self.K * self.I  - self.B * self.ang_vel  - self.Tf * friction_direction                   
+        self.ang_acc = (self.T) / self.J                               
+        self.ang_vel = self.ang_vel + self.ang_acc * self.dt
+        
+
+    def get_speed(self) -> float:
+        return self.ang_vel
     
-
+    def get_current(self) -> float:
+        return self.I
+    
+    def get_torque(self) -> float:
+        return self.T

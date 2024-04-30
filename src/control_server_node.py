@@ -14,7 +14,7 @@ from actionlib_msgs.msg import GoalID
 from simple_pid import PID
 from visualization_msgs.msg import MarkerArray, Marker
 import time
-# from robot_platform_model import robot_platform
+from robot_platform_model import robot_platform
 
 
 RATE = 100
@@ -30,12 +30,13 @@ MIN_CORRECTION_ANGLE = math.pi/32
 RELAXATION_TIME = 1
 m_to_izz_coef = 1
 # COEF_G = 5
-# COEF_O = 20
-# COEF_A = 5
+# COEF_O = 5
+# COEF_A = 2
+# COEF_B = 4.9
 COEF_G = 5
 COEF_O = 5
 COEF_A = 2
-COEF_B = 4.9
+COEF_B = 2
 OBSTACLE_FORCE_CONST = .3 
 
 
@@ -48,7 +49,7 @@ ODOMETRY_TOPIC = '/pedsim_simulator/robot_position'
 TF_TOPIC = '/tf'
 LASER_SCAN_TOPIC = '/laserscan_v1'
 HUMAN_MASS = 0
-ROBOT_MASS = 10
+ROBOT_MASS = 20
 MAX_DIST = 8
 
 
@@ -130,7 +131,7 @@ class sfm_controller():
         # PID
         self.angular_velocity_controller = PID(Kp = RATE, Ki = 0, Kd = 1, setpoint=0, output_limits = (-MAX_ANGULAR_VEL, MAX_ANGULAR_VEL)) # need to calculate coefficients
         # platform
-        # self.robot_platform = robot_platform(...)
+        self.robot_platform = robot_platform(dt= RATE**-1)
 
         print('ready')
 
@@ -272,16 +273,16 @@ class sfm_controller():
 
         print('agents: ',len(self.current_surroundings_agents))
         active_agents = 0
+        actual_dist_norm_min = 10
         for agent in self.current_surroundings_agents:
             actual_dist_x = self.current_pose_pose.position.x - agent.pose.position.x
             actual_dist_y = self.current_pose_pose.position.y - agent.pose.position.y
             actual_dist = numpy.array([actual_dist_x, actual_dist_y, 0], numpy.dtype("float64"))
             actual_dist_norm = numpy.linalg.norm(actual_dist, ord=2)
-            
+            if (actual_dist_norm < actual_dist_norm_min): actual_dist_norm_min = actual_dist_norm
             agent_vel = numpy.array([agent.twist.linear.x, agent.twist.linear.y, 0], numpy.dtype("float64"))
             agent_vel_norm = numpy.linalg.norm(agent_vel, ord=2)
             chasing = (numpy.dot(agent_vel, robot_vel) > 0)
-
             agent_vel_unit = numpy.array([0,0,0],numpy.dtype('float64'))
             if agent_vel_norm:
                 agent_vel_unit = agent_vel/agent_vel_norm
@@ -351,6 +352,10 @@ class sfm_controller():
         if (slowing_in_crowd < .5): slowing_in_crowd = .5
         self.max_linear_vel = MAX_LINEAR_VEL * slowing_in_crowd
 
+        if (actual_dist_norm_min < self.safe_distance):
+                self.collision_detected = True
+                self.max_linear_vel = MAX_LINEAR_VEL * .1
+
 
         self.create_force_marker(social_force)
         
@@ -361,7 +366,6 @@ class sfm_controller():
     def calculate_obstacle_force(self):
         coef_o = self.force_coef_o
         obstacle_force = numpy.array([0,0,0], numpy.dtype("float64"))
-
         min_index = 0
         tmp_val = 10
         for i in range(len(self.current_laser_ranges)):
@@ -393,10 +397,17 @@ class sfm_controller():
 
             scan_half_size = math.floor(len(self.current_laser_ranges)/2)
             counter_index = scan_half_size + min_index
-            print(f'counter_index = {counter_index}')
+            # print(f'counter_index = {counter_index}')
             if (counter_index >= len(self.current_laser_ranges)): counter_index -= len(self.current_laser_ranges)
             elif (counter_index < 0): counter_index += len(self.current_laser_ranges)
-            print(f'counter_index = {counter_index}')
+            # print(f'counter_index = {counter_index}')
+            counter_laser_pos = 1 * numpy.array(
+                [   self.current_laser_ranges[counter_index]
+                        * math.cos(robot_angle_offset + math.radians(counter_index)),
+                    self.current_laser_ranges[counter_index]
+                        * math.sin(robot_angle_offset + math.radians(counter_index)),
+                    0],
+                numpy.dtype("float64"))
             counter_distance = self.current_laser_ranges[counter_index] - self.safe_distance
             counter_force_amount = coef_o * math.exp(-counter_distance / self.obstacle_force_const)
             force_amount -= counter_force_amount
@@ -404,59 +415,11 @@ class sfm_controller():
             obstacle_force = - force_amount * laser_direction
 
             self.create_force_marker(laser_pos, color=(.5,1,1), scale=1)
+            self.create_force_marker(counter_laser_pos, color=(.4,.9,.9), scale=1)
             self.create_force_marker(obstacle_force, color=(0,0,1))
 
         print("obstacle force: ", obstacle_force)
         return obstacle_force
-
-    # def calculate_obstacle_force(self):
-    #     coef_o = self.force_coef_o
-    #     obstacle_force = numpy.array([0,0,0], numpy.dtype("float64"))
-
-    #     obstacle_points_count = 0
-    #     for i in range(len(self.current_laser_ranges)):
-    #         # print(i, self.current_laser_ranges[i])
-    #         if self.current_laser_ranges[i] and (self.current_laser_ranges[i] <= self.safe_distance):
-    #             self.collision_detected = True
-    #             print('COLLISION\nCOLLISION\nCOLLISION\nCOLLISION\nCOLLISION\nCOLLISION\nCOLLISION\nCOLLISION\nCOLLISION')
-    #             self.is_ok = False
-    #             return obstacle_force
-            
-    #         if (self.current_laser_ranges[i] > 10): continue
-
-    #         # obstacle_points_count += 1
-
-    #         robot_orientation = self.current_pose_pose.orientation
-    #         robot_angle_offset = quaternion_to_euler(robot_orientation)[2]
-    #         laser_pos = 1 * numpy.array(
-    #             [   self.current_laser_ranges[i]
-    #                     * math.cos(robot_angle_offset + math.radians(i)),
-    #                 self.current_laser_ranges[i]
-    #                     * math.sin(robot_angle_offset + math.radians(i)),
-    #                 0],
-    #             numpy.dtype("float64"))
-    #         laser_vec_norm = numpy.linalg.norm(laser_pos)
-    #         if laser_vec_norm != 0:
-    #             laser_direction = laser_pos / laser_vec_norm
-    #         else:
-    #             laser_direction = numpy.array([0, 0, 0], numpy.dtype("float64"))
-    #         distance = self.current_laser_ranges[i] - self.safe_distance
-            
-    #         # print(i, " ", distance)
-    #         force_amount = coef_o * math.exp(-distance / self.obstacle_force_const) 
-    #         obstacle_force_add = - force_amount * laser_direction
-    #         obstacle_force += obstacle_force_add
-    #         obstacle_points_count += 1
-    #         self.create_force_marker(laser_pos, color=(.5,1,1), scale=1)
-
-    #     if (obstacle_points_count):
-    #         obstacle_force /= obstacle_points_count
-
-        
-    #     self.create_force_marker(obstacle_force, color=(0,0,1))
-        
-    #     print("obstacle force: ", obstacle_force)
-    #     return obstacle_force
 
     # calculate total potential force - plane_no_torque
     def calculate_force(self) -> Wrench:
@@ -520,8 +483,8 @@ class sfm_controller():
         # if (() > MIN_CORRECTION_ANGLE):
         #     w_ideal = self.angular_velocity_controller(angle_vel_to_my_x)                                 # 1
         w_ideal = self.angular_velocity_controller(angle_vel_to_my_x)                                       # 2
-        # v, w = self.robot_platform.speed_out(v_ideal, w_ideal)                                            # todo
-        v, w = v_ideal, w_ideal                                                                             # temp
+        v, w = self.robot_platform.speed_out(v_ideal, w_ideal)                                              # todo
+        # v, w = v_ideal, w_ideal                                                                             # temp
         self.desired_velocity_twist.linear.x = v
         self.desired_velocity_twist.angular.z = w
         print(f'my pos is {self.current_pose_pose.position.x} {self.current_pose_pose.position.y}')

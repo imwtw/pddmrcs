@@ -17,7 +17,7 @@ import time
 from robot_platform_model import robot_platform
 
 
-RATE = int(1e3)
+RATE = int(1e2)
 
 GOAL_REACH_TOLERANCE = .5
 POSE_TOLERANCE_DEFAULT = 1

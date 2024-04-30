@@ -39,14 +39,14 @@ class robot_platform():
                             K=K_DEFAULT, 
                             B=B_DEFAULT, 
                             J_internal=J_DEFAULT, 
-                            dt=dt/DT_FACTOR
+                            dt=dt/DT_FACTOR**2
                             )
         self.dc_motor_r = dc_motor(  Ra=R_DEFAULT, 
                             La=L_DEFAULT, 
                             K=K_DEFAULT, 
                             B=B_DEFAULT, 
                             J_internal=J_DEFAULT, 
-                            dt=dt/DT_FACTOR
+                            dt=dt/DT_FACTOR**2
                             )
 
         # inertial parameters
@@ -58,13 +58,13 @@ class robot_platform():
                                 Ki = KI_DEFAULT, 
                                 Kd = KD_DEFAULT, 
                                 setpoint=0,
-                                sample_time=dt
+                                sample_time=dt/DT_FACTOR
                                 )
         self.r_wheel_pid = PID( Kp = KP_DEFAULT, 
                                 Ki = KI_DEFAULT, 
                                 Kd = KD_DEFAULT, 
                                 setpoint=0,
-                                sample_time=dt
+                                sample_time=dt/DT_FACTOR
                                 )
         self.l_wheel_speed = 0                  # rad/s
         self.r_wheel_speed = 0                  # rad/s
@@ -80,9 +80,17 @@ class robot_platform():
             J_ext_ = mass_ext * MASS_R_DEFAULT**2 / I_DEFAULT**2
             self.dc_motor_l.update_J(J_ext=J_ext_)
             self.dc_motor_r.update_J(J_ext=J_ext_)
+            T_FACTOR = (J_ext_ + J_DEFAULT)/J_DEFAULT
+            self.l_wheel_pid.tunings((KP_DEFAULT * T_FACTOR, KI_DEFAULT, KD_DEFAULT))
+            self.r_wheel_pid.tunings((KP_DEFAULT * T_FACTOR, KI_DEFAULT, KD_DEFAULT))
         else:
             self.dc_motor_l.update_J(J_ext=0)
             self.dc_motor_r.update_J(J_ext=0)
+            self.l_wheel_pid.tunings((KP_DEFAULT,KI_DEFAULT,KD_DEFAULT))
+            self.r_wheel_pid.tunings((KP_DEFAULT,KI_DEFAULT,KD_DEFAULT))
+        
+
+        
 
         
     
@@ -94,20 +102,22 @@ class robot_platform():
     # linear, angular
     def speed_out(self, linear_target, angular_target):
         self.l_wheel_speed_target = (2*linear_target - angular_target*self.width)/2 / WHEEL_R_DEFAULT * I_DEFAULT
-        self.r_wheel_speed_target = (2*linear_target + angular_target*self.width)/2 / WHEEL_R_DEFAULT * I_DEFAULT      
-        self.l_wheel_current_target = -self.l_wheel_pid(self.l_wheel_speed_target - self.dc_motor_l.get_speed())
-        self.r_wheel_current_target = -self.r_wheel_pid(self.r_wheel_speed_target - self.dc_motor_r.get_speed())
-        for _ in range(DT_FACTOR): 
-            if (self.l_wheel_current_target - self.dc_motor_l.get_current() >= 0):  
-                self.l_wheel_voltage = VOLTAGE_LIMITS_DEFAULT
-            else:                                                                   
-                self.l_wheel_voltage = -VOLTAGE_LIMITS_DEFAULT
-            if (self.r_wheel_current_target - self.dc_motor_r.get_current() >= 0):  
-                self.r_wheel_voltage = VOLTAGE_LIMITS_DEFAULT
-            else:                                                                   
-                self.r_wheel_voltage = -VOLTAGE_LIMITS_DEFAULT          
-            self.dc_motor_l.update(voltage=self.l_wheel_voltage)
-            self.dc_motor_r.update(voltage=self.r_wheel_voltage)
-        self.l_wheel_speed = self.dc_motor_l.get_speed()
-        self.r_wheel_speed = self.dc_motor_r.get_speed()
+        self.r_wheel_speed_target = (2*linear_target + angular_target*self.width)/2 / WHEEL_R_DEFAULT * I_DEFAULT
+
+        for __ in range(DT_FACTOR):
+            self.l_wheel_current_target = -self.l_wheel_pid(self.l_wheel_speed_target - self.l_wheel_speed)
+            self.r_wheel_current_target = -self.r_wheel_pid(self.r_wheel_speed_target - self.r_wheel_speed)
+            for _ in range(DT_FACTOR): 
+                if (self.l_wheel_current_target - self.dc_motor_l.get_current() >= 0):  
+                    self.l_wheel_voltage = VOLTAGE_LIMITS_DEFAULT
+                else:                                                                   
+                    self.l_wheel_voltage = -VOLTAGE_LIMITS_DEFAULT
+                if (self.r_wheel_current_target - self.dc_motor_r.get_current() >= 0):  
+                    self.r_wheel_voltage = VOLTAGE_LIMITS_DEFAULT
+                else:                                                                   
+                    self.r_wheel_voltage = -VOLTAGE_LIMITS_DEFAULT          
+                self.dc_motor_l.update(voltage=self.l_wheel_voltage)
+                self.dc_motor_r.update(voltage=self.r_wheel_voltage)
+            self.l_wheel_speed = self.dc_motor_l.get_speed()
+            self.r_wheel_speed = self.dc_motor_r.get_speed()
         return self.speed_cur()

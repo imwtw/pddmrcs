@@ -29,8 +29,8 @@ J_DEFAULT = 1.4829e-3       # kg * m2
 # K_DEFAULT = 0.0191         # V / rad/s
 # J_DEFAULT = 1.554e-5        # kg * m2
 
-T_ = (J_DEFAULT * R_DEFAULT) / (K_DEFAULT * K_DEFAULT)
-K_ = K_DEFAULT/(2*3.2258e-3) * 1                           # *100 ?????
+T_ = (J_DEFAULT * R_DEFAULT) / (K_DEFAULT * K_DEFAULT) * 10 # *10 ?????
+K_ = K_DEFAULT/(2*3.2258e-3) * 1                           
 
 # controller parameters
 VOLTAGE_LIMITS_DEFAULT = 36
@@ -39,8 +39,8 @@ KI_DEFAULT = K_
 KD_DEFAULT = 0
 
 # DT_FACTOR = 1
-DT_FACTOR = 100
-RATE = 10000
+DT_FACTOR = 10
+RATE = int(1e4)
 PRINTRATE = RATE/100
 DT = RATE**-1
 TIME = 1
@@ -72,7 +72,7 @@ def test():
                     Kd = KD_DEFAULT, 
                     sample_time=DT, 
                     setpoint=0, 
-                    output_limits = (-VOLTAGE_LIMITS_DEFAULT, VOLTAGE_LIMITS_DEFAULT)
+                    # output_limits = (-VOLTAGE_LIMITS_DEFAULT, VOLTAGE_LIMITS_DEFAULT)
                     )   
     test_pid.reset()
     test_motor = dc_motor(  Ra=R_DEFAULT, 

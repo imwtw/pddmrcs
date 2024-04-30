@@ -17,10 +17,11 @@ import time
 from robot_platform_model import robot_platform
 
 
-RATE = 100
+RATE = int(1e3)
+
 GOAL_REACH_TOLERANCE = .5
 POSE_TOLERANCE_DEFAULT = 1
-EPS = 1e-3
+EPS = 1e-6
 SAFE_DISTANCE_DEFAULT = .5
 OBSTACLE_DIST_TOLERANCE = .01
 MAX_LINEAR_VEL = 1
@@ -48,7 +49,7 @@ AGENTS_TOPIC = '/pedsim_simulator/simulated_agents'
 ODOMETRY_TOPIC = '/pedsim_simulator/robot_position'
 TF_TOPIC = '/tf'
 LASER_SCAN_TOPIC = '/laserscan_v1'
-HUMAN_MASS = 0
+HUMAN_MASS = 80
 ROBOT_MASS = 20
 MAX_DIST = 8
 
@@ -126,12 +127,14 @@ class sfm_controller():
         self.subscriber_agents = rospy.Subscriber(self.agents_topic, AgentStates, self.callback_sub_agents)
         self.subscriber_scan = rospy.Subscriber(self.scan_topic, LaserScan, self.callback_sub_scan)
 
-        # init functions
-        self.recalculate_weight()
         # PID
         self.angular_velocity_controller = PID(Kp = RATE, Ki = 0, Kd = 1, setpoint=0, output_limits = (-MAX_ANGULAR_VEL, MAX_ANGULAR_VEL)) # need to calculate coefficients
         # platform
         self.robot_platform = robot_platform(dt= RATE**-1)
+
+        
+        # init functions
+        self.recalculate_weight()
 
         print('ready')
 
@@ -223,6 +226,7 @@ class sfm_controller():
         self.inertia.m = self.calculate_human_mass() + self.mass
         self.inertia.izz = m_to_izz_coef * self.inertia.m
         # print(f'{self.inertia}')
+        self.robot_platform.update_parameters(mass_ext=self.inertia.m)
         return self.inertia
     
     # calculate potential force from goal waypoint - maximum_velocity
@@ -253,7 +257,7 @@ class sfm_controller():
 
         # rospy.sleep(.1)
 
-        print("goal force:", goal_force)
+        # print("goal force:", goal_force)
         return goal_force
         
     # calculate potential force from social agents - inverse_exponential
@@ -271,7 +275,7 @@ class sfm_controller():
         robot_vel = numpy.array([robot_vel_x, robot_vel_y, 0], numpy.dtype("float64"))
         robot_vel_norm = numpy.linalg.norm(robot_vel, ord=2)
 
-        print('agents: ',len(self.current_surroundings_agents))
+        # print('agents: ',len(self.current_surroundings_agents))
         active_agents = 0
         actual_dist_norm_min = 10
         for agent in self.current_surroundings_agents:
@@ -359,7 +363,7 @@ class sfm_controller():
 
         self.create_force_marker(social_force)
         
-        print("social force: ", social_force)
+        # print("social force: ", social_force)
         return social_force  
         
     # calculate potential force from obstacles - repulse_from_closest_inverse_exponential
@@ -418,7 +422,7 @@ class sfm_controller():
             self.create_force_marker(counter_laser_pos, color=(.4,.9,.9), scale=1)
             self.create_force_marker(obstacle_force, color=(0,0,1))
 
-        print("obstacle force: ", obstacle_force)
+        # print("obstacle force: ", obstacle_force)
         return obstacle_force
 
     # calculate total potential force - plane_no_torque
@@ -435,7 +439,7 @@ class sfm_controller():
         
         self.create_force_marker(complete_force, color=(.1,.1,.1))
         self.visualize_forces()
-        print("complete force:", complete_force)
+        # print("complete force:", complete_force)
         return self.current_force_wrench
 
     # calculate total acceleration from potential forces - plane_no_angular
@@ -483,13 +487,24 @@ class sfm_controller():
         # if (() > MIN_CORRECTION_ANGLE):
         #     w_ideal = self.angular_velocity_controller(angle_vel_to_my_x)                                 # 1
         w_ideal = self.angular_velocity_controller(angle_vel_to_my_x)                                       # 2
+
+
+        # self.max_linear_vel = MAX_LINEAR_VEL
+        # self.max_angular_vel = MAX_ANGULAR_VEL
+        v_ideal, w_ideal = 1, 0
+
         v, w = self.robot_platform.speed_out(v_ideal, w_ideal)                                              # todo
         # v, w = v_ideal, w_ideal                                                                             # temp
+
+
+
+
+
         self.desired_velocity_twist.linear.x = v
         self.desired_velocity_twist.angular.z = w
         print(f'my pos is {self.current_pose_pose.position.x} {self.current_pose_pose.position.y}')
         print(f'my angle is {robot_angle_offset}')
-        # print(f'desired vel: {desired_velocity}')
+        print(f'desired vel: {desired_velocity}')
         # print(f'desired vel angle to base x: {angle_vel_to_base_x}')
         # print(f'desired vel angle to my x is {angle_vel_to_my_x}')
         print(f'cmd v: {self.desired_velocity_twist.linear.x}\ncmd w: {self.desired_velocity_twist.angular.z}')

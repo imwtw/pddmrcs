@@ -2,7 +2,7 @@ from simple_pid import PID
 from dc_motor_model import dc_motor
 
 # random platform geometry
-WIDTH_DEFAULT=1
+WIDTH_DEFAULT = 1
 MASS_DEFAULT = 20 
 MASS_R_DEFAULT = .5
 
@@ -28,7 +28,7 @@ KP_DEFAULT = T_ * K_
 KI_DEFAULT = K_
 KD_DEFAULT = 0
 
-DT_FACTOR = 10
+DT_FACTOR = 50
 
 
 class robot_platform():
@@ -81,13 +81,13 @@ class robot_platform():
             self.dc_motor_l.update_J(J_ext=J_ext_)
             self.dc_motor_r.update_J(J_ext=J_ext_)
             T_FACTOR = (J_ext_ + J_DEFAULT)/J_DEFAULT
-            self.l_wheel_pid.tunings((KP_DEFAULT * T_FACTOR, KI_DEFAULT, KD_DEFAULT))
-            self.r_wheel_pid.tunings((KP_DEFAULT * T_FACTOR, KI_DEFAULT, KD_DEFAULT))
-        else:
+            self.l_wheel_pid.__setattr__('tunings', (KP_DEFAULT * T_FACTOR, KI_DEFAULT, KD_DEFAULT))
+            self.r_wheel_pid.__setattr__('tunings', (KP_DEFAULT * T_FACTOR, KI_DEFAULT, KD_DEFAULT))
+        # else:
             self.dc_motor_l.update_J(J_ext=0)
             self.dc_motor_r.update_J(J_ext=0)
-            self.l_wheel_pid.tunings((KP_DEFAULT,KI_DEFAULT,KD_DEFAULT))
-            self.r_wheel_pid.tunings((KP_DEFAULT,KI_DEFAULT,KD_DEFAULT))
+            self.l_wheel_pid.__setattr__('tunings', (KP_DEFAULT,KI_DEFAULT,KD_DEFAULT))
+            self.r_wheel_pid.__setattr__('tunings', (KP_DEFAULT,KI_DEFAULT,KD_DEFAULT))
         
 
         

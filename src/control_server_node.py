@@ -17,7 +17,7 @@ import time
 from robot_platform_model import robot_platform
 
 
-RATE = int(1e2)
+RATE = int(5e1)
 
 GOAL_REACH_TOLERANCE = .5
 POSE_TOLERANCE_DEFAULT = 1
@@ -491,7 +491,7 @@ class sfm_controller():
 
         # self.max_linear_vel = MAX_LINEAR_VEL
         # self.max_angular_vel = MAX_ANGULAR_VEL
-        v_ideal, w_ideal = 1, 0
+        # v_ideal, w_ideal = 0.1, 0.5
 
         v, w = self.robot_platform.speed_out(v_ideal, w_ideal)                                              # todo
         # v, w = v_ideal, w_ideal                                                                             # temp
@@ -588,9 +588,13 @@ class sfm_controller():
                     self.publisher.publish(self.calculate_velocity())
                     print('Elapsed time: ', elapsed_time)
                     print('__________________')
-                    rospy.sleep(RATE**(-1))
                     end_time = time.time()
-                    elapsed_time = end_time - start_time
+                    elapsed_time = end_time - start_time 
+                    if (RATE**(-1) > elapsed_time):       
+                        rospy.sleep(RATE**(-1) - elapsed_time)
+                    else:
+                        for _ in range(5): print('RATE IS TOO HIGH\n')
+                        rospy.sleep(RATE**(-1))
                 if self.is_ok:
                     self.goal_set = False
                     # print('goal reached')

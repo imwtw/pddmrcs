@@ -53,6 +53,7 @@ _show = False
 
 
 def plot_it(origin, thing, *, color = 'purple', arrow=False, aster=False):
+    # from matplotlib import pyplot as plt
     plt.plot([origin[0], origin[0] + thing[0]], [origin[1], origin[1]+thing[1]], color=color)
     if arrow:
         if abs(thing[0])>EPS: 

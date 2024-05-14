@@ -7,6 +7,7 @@ SCENE_PATH = '/home/wtw-ub/workspace/pedsim/src/pedsim_simulator/scenarios/hospi
 flag_direct = True
 
 def ask(args):
+    # return 'cross_1'
     return input(args)
 
 class astar_graph(AStar):
@@ -152,6 +153,7 @@ def main():
             print('\ncontrol sender')
             queue_ = []
             queue_names = []
+            # input_ = ['cross_1']
             input_ = ask('enter point or \'click\': ').strip().split(' ')
             if input_[0]=='click':
                 print('waiting for point in /clicked_point ...')

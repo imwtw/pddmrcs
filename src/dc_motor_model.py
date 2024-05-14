@@ -10,6 +10,7 @@ class dc_motor:
         self.dt = dt
         self.I = 0.
         self.T = 0.
+        self.voltage = 0.
         self.ang_acc = 0.
         self.ang_vel = 0.  
         self.Tf = .14
@@ -19,21 +20,20 @@ class dc_motor:
         self.J = self.J_internal + self.J_external
 
     def update(self, *, voltage):
+        self.voltage = voltage
+        dI = ((voltage - self.K * self.ang_vel - self.Ra * self.I) / self.La) * self.dt 
+        self.I = self.I + dI
         friction_direction = 0
         if (self.ang_vel > 0):  
             friction_direction = 1
         elif (self.ang_vel < 0):
             friction_direction = -1
-        elif (self.ang_acc > 0):
-            friction_direction = 1
-        elif (self.ang_acc < 0):
-            friction_direction = -1
+        self.T = self.K * self.I  - self.B * self.ang_vel   
+        if (abs(self.T) < self.Tf):  
+            self.T = 0.
         else:
-            friction_direction = 0
-
-        dI = ((voltage - self.K * self.ang_vel - self.Ra * self.I) / self.La) * self.dt 
-        self.I = self.I + dI
-        self.T = self.K * self.I  - self.B * self.ang_vel  - self.Tf * friction_direction                   
+            self.T -= friction_direction * self.Tf
+        # self.T = self.K * self.I  - self.B * self.ang_vel  - self.Tf * friction_direction
         self.ang_acc = (self.T) / self.J                               
         self.ang_vel = self.ang_vel + self.ang_acc * self.dt
         
@@ -46,3 +46,6 @@ class dc_motor:
     
     def get_torque(self) -> float:
         return self.T
+
+    def get_voltage(self) -> float:
+        return self.voltage

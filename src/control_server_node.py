@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import math
+from os import wait3
+from jinja2 import Undefined
 import numpy
 import rospy
 import actionlib
@@ -15,9 +17,13 @@ from simple_pid import PID
 from visualization_msgs.msg import MarkerArray, Marker
 import time
 from robot_platform_model import robot_platform
+from matplotlib import pyplot as plt
 
 
-RATE = int(5e1)
+
+
+# RATE = int(5e1)
+RATE = 40
 
 GOAL_REACH_TOLERANCE = .5
 POSE_TOLERANCE_DEFAULT = 1
@@ -50,7 +56,7 @@ ODOMETRY_TOPIC = '/pedsim_simulator/robot_position'
 TF_TOPIC = '/tf'
 LASER_SCAN_TOPIC = '/laserscan_v1'
 HUMAN_MASS = 80
-ROBOT_MASS = 20
+ROBOT_MASS = 30
 MAX_DIST = 8
 
 
@@ -63,9 +69,19 @@ class sfm_controller():
     # init
     def __init__(self) -> None:
 
+        self.success_counter = 0
+        self.iteration = 0
+        self.print_ = False
+        self.array_time = []
+        self.array_v_target = []
+        self.array_v = []
+        self.array_w_target = []
+        self.array_w = []
+
         # switches
         self.is_ok = True
         self.goal_set = False
+        self.goal_reach_success = False
         self.loaded = False
         self.collision_detected = False
 
@@ -99,7 +115,7 @@ class sfm_controller():
         self.inertia = Inertia()
         self.current_goal_pose = Pose()
         self.current_pose_pose = Pose()
-        self.desired_velocity_twist = Twist()
+        self.sim_velocity_twist = Twist()
         self.current_velocity_twist = Twist()
         self.current_acceleration_accel = Accel()
         self.current_force_wrench = Wrench()
@@ -128,14 +144,14 @@ class sfm_controller():
         self.subscriber_scan = rospy.Subscriber(self.scan_topic, LaserScan, self.callback_sub_scan)
 
         # PID
-        self.angular_velocity_controller = PID(Kp = RATE, Ki = 0, Kd = 1, setpoint=0, output_limits = (-MAX_ANGULAR_VEL, MAX_ANGULAR_VEL)) # need to calculate coefficients
+        self.angular_velocity_controller = PID(Kp = RATE, Ki = 0, Kd = 0, setpoint=0, output_limits = (-MAX_ANGULAR_VEL, MAX_ANGULAR_VEL)) # need to calculate coefficients
         # platform
         self.robot_platform = robot_platform(dt= RATE**-1)
 
         
         # init functions
         self.recalculate_weight()
-
+        self.robot_platform.reset()
         print('ready')
 
     # check if goal is reached
@@ -156,15 +172,12 @@ class sfm_controller():
         cancel_msg = GoalID()
         cancel_move_pub.publish(cancel_msg)
         self.goal_set = True
-        self.current_goal_pose = goal.target_pose.pose
-        while not self.run():
-            print(f"I'm not okay, trying to return...")
-            self.stop()
-            rospy.sleep(.5)
-            self.go_back()
-            rospy.sleep(1.5)
-            
-        self.action_server.set_succeeded()      
+        self.goal_reach_success = False
+        self.current_goal_pose = goal.target_pose.pose       
+    
+        self.run()
+        self.plot_all()
+        self.action_server.set_succeeded()
         
     # odometry callback - works incorrect in simulator itself
     def callback_sub_odom(self, called_data):
@@ -257,7 +270,7 @@ class sfm_controller():
 
         # rospy.sleep(.1)
 
-        # print("goal force:", goal_force)
+        # if self.print_: print("goal force:", goal_force)
         return goal_force
         
     # calculate potential force from social agents - inverse_exponential
@@ -275,7 +288,7 @@ class sfm_controller():
         robot_vel = numpy.array([robot_vel_x, robot_vel_y, 0], numpy.dtype("float64"))
         robot_vel_norm = numpy.linalg.norm(robot_vel, ord=2)
 
-        # print('agents: ',len(self.current_surroundings_agents))
+        # if self.print_: print('agents: ',len(self.current_surroundings_agents))
         active_agents = 0
         actual_dist_norm_min = 10
         for agent in self.current_surroundings_agents:
@@ -347,23 +360,23 @@ class sfm_controller():
             self.create_force_marker(social_force_add, color=(.9,.7,.7))
 
             social_force += social_force_add
-            # print('_____________________________')
-            # print(f'agent {agent.id}')
-            # print('_____________________________')
-            # print(f'dist: {actual_dist}')
+            # if self.print_: print('_____________________________')
+            # if self.print_: print(f'agent {agent.id}')
+            # if self.print_: print('_____________________________')
+            # if self.print_: print(f'dist: {actual_dist}')
             active_agents += 1        
         slowing_in_crowd = numpy.exp(-(active_agents) / 10)
         if (slowing_in_crowd < .5): slowing_in_crowd = .5
         self.max_linear_vel = MAX_LINEAR_VEL * slowing_in_crowd
 
         if (actual_dist_norm_min < self.safe_distance):
-                self.collision_detected = True
-                self.max_linear_vel = MAX_LINEAR_VEL * .1
+            self.collision_detected = True
+            self.max_linear_vel = MAX_LINEAR_VEL * .1
 
 
         self.create_force_marker(social_force)
         
-        # print("social force: ", social_force)
+        # if self.print_: print("social force: ", social_force)
         return social_force  
         
     # calculate potential force from obstacles - repulse_from_closest_inverse_exponential
@@ -373,11 +386,11 @@ class sfm_controller():
         min_index = 0
         tmp_val = 10
         for i in range(len(self.current_laser_ranges)):
-            # print(i, self.current_laser_ranges[i])
+            # if self.print_: print(i, self.current_laser_ranges[i])
             if self.current_laser_ranges[i] and (self.current_laser_ranges[i] <= tmp_val - OBSTACLE_DIST_TOLERANCE):
                 tmp_val = self.current_laser_ranges[i]
                 min_index = i
-        # print(min_index, tmp_val)
+        # if self.print_: print(min_index, tmp_val)
         if tmp_val < self.safe_distance:
             self.collision_detected = True
             self.is_ok = False
@@ -401,10 +414,10 @@ class sfm_controller():
 
             scan_half_size = math.floor(len(self.current_laser_ranges)/2)
             counter_index = scan_half_size + min_index
-            # print(f'counter_index = {counter_index}')
+            # if self.print_: print(f'counter_index = {counter_index}')
             if (counter_index >= len(self.current_laser_ranges)): counter_index -= len(self.current_laser_ranges)
             elif (counter_index < 0): counter_index += len(self.current_laser_ranges)
-            # print(f'counter_index = {counter_index}')
+            # if self.print_: print(f'counter_index = {counter_index}')
             counter_laser_pos = 1 * numpy.array(
                 [   self.current_laser_ranges[counter_index]
                         * math.cos(robot_angle_offset + math.radians(counter_index)),
@@ -422,7 +435,7 @@ class sfm_controller():
             self.create_force_marker(counter_laser_pos, color=(.4,.9,.9), scale=1)
             self.create_force_marker(obstacle_force, color=(0,0,1))
 
-        # print("obstacle force: ", obstacle_force)
+        # if self.print_: print("obstacle force: ", obstacle_force)
         return obstacle_force
 
     # calculate total potential force - plane_no_torque
@@ -439,7 +452,7 @@ class sfm_controller():
         
         self.create_force_marker(complete_force, color=(.1,.1,.1))
         self.visualize_forces()
-        # print("complete force:", complete_force)
+        # if self.print_: print("complete force:", complete_force)
         return self.current_force_wrench
 
     # calculate total acceleration from potential forces - plane_no_angular
@@ -448,13 +461,13 @@ class sfm_controller():
         self.current_acceleration_accel.linear.x = self.current_force_wrench.force.x / self.inertia.m
         self.current_acceleration_accel.linear.y = self.current_force_wrench.force.y / self.inertia.m
         self.current_acceleration_accel.angular.z = self.current_force_wrench.torque.z / self.inertia.izz
-        # print(f'desired acc: \n{self.current_acceleration_accel.linear}')
+        # if self.print_: print(f'desired acc: \n{self.current_acceleration_accel.linear}')
         return self.current_acceleration_accel 
 
     # calculate target velocity in order to satisfy acceleration - curvature_only
-    def calculate_velocity(self, *, dt=(RATE**-1)) -> Twist:
+    def calculate_velocity(self, *, dt=(RATE**-1), stopped=False) -> Twist:
         self.calculate_acceleration()
-        self.current_velocity_twist = self.desired_velocity_twist #eto nepravilno
+        self.current_velocity_twist = self.sim_velocity_twist                                              # eto nepravilno eto po odometrii doljno prihodit!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         dvx = self.current_acceleration_accel.linear.x * dt
         dvy = self.current_acceleration_accel.linear.y * dt
         robot_orientation = self.current_pose_pose.orientation
@@ -462,11 +475,11 @@ class sfm_controller():
         current_velocity = numpy.array([self.current_velocity_twist.linear.x*numpy.cos(robot_angle_offset),
                                         self.current_velocity_twist.linear.x*numpy.sin(robot_angle_offset),
                                         0], numpy.dtype("float64"))
-        desired_velocity = current_velocity + numpy.array([dvx,dvy,0], numpy.dtype("float64"))
+        desired_velocity_change = numpy.array([dvx,dvy,0], numpy.dtype("float64"))
+        desired_velocity = current_velocity + desired_velocity_change
         desired_velocity_norm = numpy.linalg.norm(desired_velocity, ord=2)
         if desired_velocity_norm > self.max_linear_vel:
             desired_velocity = self.max_linear_vel * desired_velocity / desired_velocity_norm
-
         angle_vel_to_base_x = (
                                 (-1)**(desired_velocity[1] < 0) * #acos compensation
                                 calculate_v3_angle(desired_velocity, numpy.array([1, 0, 0], numpy.dtype("float64")))) 
@@ -475,41 +488,44 @@ class sfm_controller():
         goal_dist_x = self.current_goal_pose.position.x - self.current_pose_pose.position.x
         goal_dist_y = self.current_goal_pose.position.y - self.current_pose_pose.position.y
         goal_dist = numpy.array([goal_dist_x, goal_dist_y, 0], numpy.dtype("float64"))
-        angle_vel_to_goal = 0
-        if (numpy.linalg.norm(current_velocity) and ((abs(dvx) > 1e-5) or (abs(dvy)>1e-5))): 
-            angle_vel_to_goal = calculate_v3_angle(goal_dist, current_velocity)
-        v_ideal = 0 
-        # print(f'abs(angle_vel_to_goal) = ',abs(angle_vel_to_goal))
+        angle_vel_to_goal = 0.
+        if ((numpy.linalg.norm(current_velocity, ord=2)>EPS) and ((abs(dvx) > EPS) or (abs(dvy)>EPS)) and numpy.linalg.norm(goal_dist, ord=2)>EPS):
+            try: angle_vel_to_goal = calculate_v3_angle(goal_dist, current_velocity)
+            except Exception: angle_vel_to_goal = 0. # .........
+        v_ideal = 0.
         if abs(angle_vel_to_goal) < (MAX_SPEED_ANGLE):                                                      # 1
             v_ideal = numpy.linalg.norm(desired_velocity, ord=2) * math.cos(angle_vel_to_my_x)
         # v_ideal = numpy.linalg.norm(desired_velocity, ord=2) * math.cos(angle_vel_to_my_x)                # 2
-        w_ideal = 0
+        w_ideal = 0.
         # if (() > MIN_CORRECTION_ANGLE):
         #     w_ideal = self.angular_velocity_controller(angle_vel_to_my_x)                                 # 1
         w_ideal = self.angular_velocity_controller(angle_vel_to_my_x)                                       # 2
-
-
-        # self.max_linear_vel = MAX_LINEAR_VEL
-        # self.max_angular_vel = MAX_ANGULAR_VEL
-        # v_ideal, w_ideal = 0.1, 0.5
-
-        v, w = self.robot_platform.speed_out(v_ideal, w_ideal)                                              # todo
-        # v, w = v_ideal, w_ideal                                                                             # temp
-
-
-
-
-
-        self.desired_velocity_twist.linear.x = v
-        self.desired_velocity_twist.angular.z = w
-        print(f'my pos is {self.current_pose_pose.position.x} {self.current_pose_pose.position.y}')
-        print(f'my angle is {robot_angle_offset}')
-        print(f'desired vel: {desired_velocity}')
-        # print(f'desired vel angle to base x: {angle_vel_to_base_x}')
-        # print(f'desired vel angle to my x is {angle_vel_to_my_x}')
-        print(f'cmd v: {self.desired_velocity_twist.linear.x}\ncmd w: {self.desired_velocity_twist.angular.z}')
+        if stopped: v_ideal, w_ideal = (0.,0.)                                                              # 3/3
+        v, w = self.robot_platform.speed_out(v_ideal, w_ideal)                                              
+        self.sim_velocity_twist.linear.x = v                                                            
+        self.sim_velocity_twist.angular.z = w    
+        
+                                                              
+        if self.print_:
+            # print(f'abs(angle_vel_to_goal) = ',abs(angle_vel_to_goal))
+            # print(f'my pos is {self.current_pose_pose.position.x} {self.current_pose_pose.position.y}')
+            # print(f'my angle is {robot_angle_offset}')
+            # print(f'desired vel change: {desired_velocity_change}')
+            # print(f'desired vel: {desired_velocity}')
+            # print(f'desired vel angle to base x: {angle_vel_to_base_x}')
+            # print(f'desired vel angle to my x is {angle_vel_to_my_x}')
+            print(f'target v: {v_ideal}\ntarget w: {w_ideal}')
+            print(f'simulated v: {v}\nsimulated w: {w}')
         self.create_force_marker(desired_velocity, color=(.5,0,.5), scale=2)
-        return self.desired_velocity_twist
+        self.array_time.append(self.iteration * RATE**-1)
+        self.array_v_target.append(v_ideal)
+        self.array_v.append(v)
+        self.array_w_target.append(w_ideal)
+        self.array_w.append(w)
+
+        
+
+        return self.sim_velocity_twist
 
     def create_force_source_marker(self, marked_source, *, color=(1,0,0), scale=1):
         new_marker = Marker()
@@ -575,57 +591,124 @@ class sfm_controller():
         self.current_force_markers.markers.clear()
         return
 
+    def stay(self): 
+        while (not self.goal_set):
+            self.stop()
+
+    def stop(self):        
+        start_time = time.time()
+        self.print_or_not_idk()
+        if self.print_: 
+            print('\n' * 100)
+            print('\n__________________\nstate\n__________________')
+        self.publisher.publish(self.calculate_velocity(stopped=True))
+        self.angular_velocity_controller.reset()
+        self.robot_platform.reset()
+        end_time = time.time()
+        elapsed_time = end_time - start_time 
+        if self.print_:
+            print('Elapsed time: ', elapsed_time)
+            print('__________________')
+            print('stopped', end=" ")
+        self.iteration += 1
+        if (RATE**(-1) > elapsed_time):
+            if self.print_: print("")       
+            rospy.sleep(RATE**(-1) - elapsed_time)
+        else:
+            if self.print_: print('RATE IS TOO HIGH')
+            # rospy.sleep(RATE**(-1))
+
     def run(self):
         print('run')
         self.is_ok = True
-        while (not rospy.is_shutdown()):
-            if (self.goal_set):
-                elapsed_time = 0.
-                while (not self.goal_reached()) and self.is_ok:
-                    print('\n' * 100)
-                    start_time = time.time()
-                    print('\n__________________\nstate\n__________________')
-                    self.publisher.publish(self.calculate_velocity())
-                    print('Elapsed time: ', elapsed_time)
-                    print('__________________')
-                    end_time = time.time()
-                    elapsed_time = end_time - start_time 
-                    if (RATE**(-1) > elapsed_time):       
-                        rospy.sleep(RATE**(-1) - elapsed_time)
-                    else:
-                        for _ in range(5): print('RATE IS TOO HIGH\n')
-                        rospy.sleep(RATE**(-1))
-                if self.is_ok:
-                    self.goal_set = False
-                    # print('goal reached')
-                    self.stop()
-                    return True
-                else:
-                    print('I am not ok')
-                    self.stop()
-                    # self.goal_set = False
-                    # print('goal reset')
-                    return False
-            # rospy.sleep(1)
+        while ((not rospy.is_shutdown()) and self.goal_set):
+            self.go()
         print('\n\n\ndone running\n\n\n')
-        return False
     
-    def stop(self):
-        print('\n__________________\n__________________\nstate\n__________________')
-        self.calculate_velocity()
-        print('__________________\n__________________')
-        self.publisher.publish(Twist())
+    def go(self):
+        elapsed_time = 0.
+        # self.iteration = 0
+        while ((not self.goal_reached()) and self.is_ok):
+            start_time = time.time()
+            self.print_or_not_idk()
+            if self.print_: 
+                print('\n' * 100)
+                print('\n__________________\nstate\n__________________')
+            self.publisher.publish(self.calculate_velocity())
+            end_time = time.time()
+            elapsed_time = end_time - start_time 
+            if self.print_: 
+                print('Elapsed time: ', elapsed_time)
+                print('__________________')
+                print('going', end=" ")
+            self.iteration += 1
+            if (RATE**(-1) > elapsed_time):    
+                if self.print_: print("")   
+                rospy.sleep(RATE**(-1) - elapsed_time)
+            else:
+                if self.print_: print('RATE IS TOO HIGH')
+                # rospy.sleep(RATE**(-1))
+        if self.is_ok:
+            self.goal_set = False
+            print('goal reached')
+            # self.stop()
+            self.success_counter += 1
+            self.goal_reach_success = True
+            return True
+        else:
+            print('I am not ok')
+            self.stop()
+            # self.goal_set = False
+            # print('goal reset')
+            return False
 
-    def go_back(self):
-        print('\n__________________\n__________________\nstate\n__________________')
-        self.calculate_velocity()
-        print('__________________\n__________________')
-        back_vel = Twist()
-        back_vel.linear.x = - self.current_velocity_twist.linear.x * 1
-        back_vel.angular.z = - self.current_velocity_twist.angular.z * .5
-        # back_vel.linear.x = -.5*MAX_LINEAR_VEL
-        # back_vel.angular.z = 0
-        self.publisher.publish(back_vel)
+    def reset_plt(self):   
+        self.iteration = 0
+        self.array_time = []
+        self.array_v_target = []
+        self.array_v = []
+        self.array_w_target = []
+        self.array_w = []
+
+    def plot_v(self):
+        plt.cla()
+        plt.clf()
+        plt.plot(self.array_time, self.array_v, color='blue')
+        plt.plot(self.array_time, self.array_v_target, color='cyan')
+        plt.xlim((0, self.iteration * RATE**-1))
+        plt.xlabel('time')
+        plt.ylabel('v_ideal (cyan) | v (blue)')
+        _name = 'v_'
+        _res = str(self.success_counter) 
+        PICTURE_PATH = '/home/wtw-ub/workspace/pedsim/src/pddmrcs/src/tests/'
+        plt.savefig(PICTURE_PATH + 
+                    _name + 
+                    _res + 
+                    '.png')
+
+    def plot_w(self):
+        plt.cla()
+        plt.clf()
+        plt.plot(self.array_time, self.array_w, color='red')
+        plt.plot(self.array_time, self.array_w_target, color='orange')
+        plt.xlim((0, self.iteration * RATE**-1))
+        plt.xlabel('time')
+        plt.ylabel('w_ideal (orange) | w (red)')
+        _name = 'w_'
+        _res = str(self.success_counter) 
+        PICTURE_PATH = '/home/wtw-ub/workspace/pedsim/src/pddmrcs/src/tests/'
+        plt.savefig(PICTURE_PATH + 
+                    _name + 
+                    _res + 
+                    '.png')
+
+    def plot_all(self):
+        self.plot_v()
+        self.plot_w()
+        self.reset_plt()
+      
+    def print_or_not_idk(self):
+        self.print_ = not bool(self.iteration % (RATE/10))
 
 def calculate_v3_angle(v1, v2): 
     return math.acos(numpy.dot(v1, v2) / (numpy.linalg.norm(v1, ord=2) * numpy.linalg.norm(v2, ord=2)))
@@ -651,8 +734,13 @@ def quaternion_to_euler(q: Quaternion):
     return angles
 
 def main():
-    # rospy.init_node(NODE_NAME, anonymous=False, disable_signals=False)
     server = sfm_controller()
+    server.stay()
+    while not rospy.is_shutdown():
+        if (not server.goal_set):
+            server.stay()
+        rospy.sleep(1)
+    
     
 if __name__ == '__main__':
     main()

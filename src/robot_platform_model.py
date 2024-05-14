@@ -7,7 +7,7 @@ MASS_DEFAULT = 20
 MASS_R_DEFAULT = .5
 
 # gear parameters
-I_DEFAULT = 1
+I_DEFAULT = 36                     #?????
 WHEEL_R_DEFAULT = .3
 
 # motor parameters
@@ -29,6 +29,7 @@ KI_DEFAULT = K_
 KD_DEFAULT = 0
 
 DT_FACTOR = 50
+# DT_FACTOR = 100
 
 
 class robot_platform():
@@ -73,7 +74,6 @@ class robot_platform():
         self.l_wheel_voltage = 0                # V
         self.r_wheel_voltage = 0                # V
 
-
     def update_parameters(self, *, mass_ext=0.):
         # тут надо считать и передавать на двигатели момент инерции
         if mass_ext:
@@ -88,15 +88,9 @@ class robot_platform():
             self.dc_motor_r.update_J(J_ext=0)
             self.l_wheel_pid.__setattr__('tunings', (KP_DEFAULT,KI_DEFAULT,KD_DEFAULT))
             self.r_wheel_pid.__setattr__('tunings', (KP_DEFAULT,KI_DEFAULT,KD_DEFAULT))
-        
-
-        
-
-        
-    
+         
     # linear, angular
     def speed_cur(self):
-
         return (self.r_wheel_speed + self.l_wheel_speed)/2 * WHEEL_R_DEFAULT / I_DEFAULT, (self.r_wheel_speed-self.l_wheel_speed)/self.width * WHEEL_R_DEFAULT / I_DEFAULT
 
     # linear, angular
@@ -118,6 +112,13 @@ class robot_platform():
                     self.r_wheel_voltage = -VOLTAGE_LIMITS_DEFAULT          
                 self.dc_motor_l.update(voltage=self.l_wheel_voltage)
                 self.dc_motor_r.update(voltage=self.r_wheel_voltage)
-            self.l_wheel_speed = self.dc_motor_l.get_speed()
-            self.r_wheel_speed = self.dc_motor_r.get_speed()
+            self.l_wheel_speed = self.dc_motor_l.get_speed() 
+            self.r_wheel_speed = self.dc_motor_r.get_speed() 
         return self.speed_cur()
+
+    def reset(self):  
+        self.l_wheel_pid.reset()   
+        self.r_wheel_pid.reset()  
+        # self.r_wheel_speed = 0
+        # self.l_wheel_speed = 0
+        pass

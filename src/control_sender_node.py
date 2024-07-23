@@ -73,11 +73,7 @@ class astar_graph(AStar):
                     cleared_neigbours.append(self.graph[neighbour_index]['id'])
             # print(f'neighbours of {graph_node["id"]}: {cleared_neigbours}')
             graph_node['neighbours'] = cleared_neigbours
-            
-
-
-
-
+ 
     def node_index_from_id(self, id):
         for node_index in range(len(self.graph)):
             if self.graph[node_index]['id'] == id: 
@@ -144,7 +140,8 @@ def main():
     
     last_waypoint = 0
     for wp in waypoints:
-        if wp['id'] == 'turn_1': 
+        # if wp['id'] == 'turn_1': 
+        if wp['id'] == 'cross_2': 
             last_waypoint = wp
             break
 

@@ -36,15 +36,15 @@ MAX_SPEED_ANGLE = math.pi/4
 MIN_CORRECTION_ANGLE = math.pi/32
 RELAXATION_TIME = 1
 m_to_izz_coef = 1
-# COEF_G = 5
-# COEF_O = 5
-# COEF_A = 2
-# COEF_B = 4.9
 COEF_G = 5
 COEF_O = 5
 COEF_A = 2
 COEF_B = 2
 OBSTACLE_FORCE_CONST = .3 
+# COEF_G = 5
+# COEF_O = 5
+# COEF_A = 2
+# COEF_B = 4.9
 
 
 NODE_NAME = 'control_server_node'
@@ -77,11 +77,16 @@ class sfm_controller():
         self.array_v = []
         self.array_w_target = []
         self.array_w = []
+        self.array_dist = []
+        self.array_angle = []
+        self.array_force_g = []
+        self.array_force_o = []
+        self.array_force_s = []
 
         # switches
         self.is_ok = True
         self.goal_set = False
-        self.goal_reach_success = False
+        self.goal_reach_success = True
         self.loaded = False
         self.collision_detected = False
 
@@ -271,6 +276,9 @@ class sfm_controller():
         # rospy.sleep(.1)
 
         # if self.print_: print("goal force:", goal_force)
+        self.array_dist.append(goal_dist_norm)
+        self.array_angle.append(calculate_v3_angle(goal_dist, robot_vel))
+        self.array_force_g.append(numpy.linalg.norm(goal_force, ord=2))
         return goal_force
         
     # calculate potential force from social agents - inverse_exponential
@@ -375,6 +383,7 @@ class sfm_controller():
 
 
         self.create_force_marker(social_force)
+        self.array_force_s.append(numpy.linalg.norm(social_force, ord=2))
         
         # if self.print_: print("social force: ", social_force)
         return social_force  
@@ -436,6 +445,7 @@ class sfm_controller():
             self.create_force_marker(obstacle_force, color=(0,0,1))
 
         # if self.print_: print("obstacle force: ", obstacle_force)
+        self.array_force_o.append(numpy.linalg.norm(obstacle_force, ord=2))
         return obstacle_force
 
     # calculate total potential force - plane_no_torque
@@ -492,16 +502,15 @@ class sfm_controller():
         if ((numpy.linalg.norm(current_velocity, ord=2)>EPS) and ((abs(dvx) > EPS) or (abs(dvy)>EPS)) and numpy.linalg.norm(goal_dist, ord=2)>EPS):
             try: angle_vel_to_goal = calculate_v3_angle(goal_dist, current_velocity)
             except Exception: angle_vel_to_goal = 0. # .........
+        if stopped: desired_velocity_norm, angle_vel_to_my_x = (0.,0.)
         v_ideal = 0.
-        if abs(angle_vel_to_goal) < (MAX_SPEED_ANGLE):                                                      # 1
-            v_ideal = numpy.linalg.norm(desired_velocity, ord=2) * math.cos(angle_vel_to_my_x)
-        # v_ideal = numpy.linalg.norm(desired_velocity, ord=2) * math.cos(angle_vel_to_my_x)                # 2
+        if abs(angle_vel_to_goal) < (MAX_SPEED_ANGLE):                                                      
+            v_ideal = desired_velocity_norm * math.cos(angle_vel_to_my_x)
         w_ideal = 0.
-        # if (() > MIN_CORRECTION_ANGLE):
-        #     w_ideal = self.angular_velocity_controller(angle_vel_to_my_x)                                 # 1
-        w_ideal = self.angular_velocity_controller(angle_vel_to_my_x)                                       # 2
-        if stopped: v_ideal, w_ideal = (0.,0.)                                                              # 3/3
-        v, w = self.robot_platform.speed_out(v_ideal, w_ideal)                                              
+        w_ideal = self.angular_velocity_controller(angle_vel_to_my_x)                                       
+        # if stopped: v_ideal, w_ideal = (0.,0.)                               
+        v, w = self.robot_platform.speed_out(v_ideal, w_ideal)       
+        # v, w = v_ideal, w_ideal                            
         self.sim_velocity_twist.linear.x = v                                                            
         self.sim_velocity_twist.angular.z = w    
         
@@ -521,9 +530,7 @@ class sfm_controller():
         self.array_v_target.append(v_ideal)
         self.array_v.append(v)
         self.array_w_target.append(w_ideal)
-        self.array_w.append(w)
-
-        
+        self.array_w.append(w)            
 
         return self.sim_velocity_twist
 
@@ -669,7 +676,29 @@ class sfm_controller():
         self.array_v = []
         self.array_w_target = []
         self.array_w = []
-
+        self.array_angle = []
+        self.array_dist = []
+        self.array_force_g = []
+        self.array_force_s = []
+        self.array_force_o = []
+    
+    def plot_f(self):
+        plt.cla()
+        plt.clf()
+        plt.plot(self.array_time, self.array_force_s, color='red')
+        plt.plot(self.array_time, self.array_force_o, color='blue')
+        plt.plot(self.array_time, self.array_force_g, color='green')
+        plt.xlim((0, self.iteration * RATE**-1))
+        plt.xlabel('time')
+        plt.ylabel('g (green) | o (blue) | s (red)')
+        _name = 'f_'
+        _res = str(self.success_counter) 
+        PICTURE_PATH = '/home/wtw-ub/workspace/pedsim/src/pddmrcs/src/tests/'
+        plt.savefig(PICTURE_PATH + 
+                    _name + 
+                    _res + 
+                    '.png')
+    
     def plot_v(self):
         plt.cla()
         plt.clf()
@@ -702,9 +731,42 @@ class sfm_controller():
                     _res + 
                     '.png')
 
+    def plot_d(self):
+        plt.cla()
+        plt.clf()
+        plt.plot(self.array_time, self.array_dist, color='blue')
+        plt.xlim((0, self.iteration * RATE**-1))
+        plt.xlabel('time')
+        plt.ylabel('dist (blue)')
+        _name = 'd_'
+        _res = str(self.success_counter) 
+        PICTURE_PATH = '/home/wtw-ub/workspace/pedsim/src/pddmrcs/src/tests/'
+        plt.savefig(PICTURE_PATH + 
+                    _name + 
+                    _res + 
+                    '.png')
+
+    def plot_a(self):
+        plt.cla()
+        plt.clf()
+        plt.plot(self.array_time, self.array_angle, color='blue')
+        plt.xlim((0, self.iteration * RATE**-1))
+        plt.xlabel('time')
+        plt.ylabel('angle (blue)')
+        _name = 'a_'
+        _res = str(self.success_counter) 
+        PICTURE_PATH = '/home/wtw-ub/workspace/pedsim/src/pddmrcs/src/tests/'
+        plt.savefig(PICTURE_PATH + 
+                    _name + 
+                    _res + 
+                    '.png')
+
     def plot_all(self):
         self.plot_v()
         self.plot_w()
+        self.plot_d()
+        self.plot_a()
+        self.plot_f()
         self.reset_plt()
       
     def print_or_not_idk(self):
@@ -737,9 +799,10 @@ def main():
     server = sfm_controller()
     server.stay()
     while not rospy.is_shutdown():
-        if (not server.goal_set):
+        if (not server.goal_set and server.goal_reach_success):
             server.stay()
-        rospy.sleep(1)
+            pass
+        rospy.sleep(.05)
     
     
 if __name__ == '__main__':

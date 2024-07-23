@@ -4,10 +4,7 @@
 
 я понимаю, что там все плохо, но переделывать не было смысла
 
-![image](https://github.com/user-attachments/assets/3ca27857-ce47-4951-bc2d-05d8f488fd4c)
-
-
-
+![video](https://github.com/user-attachments/assets/3ca27857-ce47-4951-bc2d-05d8f488fd4c)
 
 
 
